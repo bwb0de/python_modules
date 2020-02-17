@@ -59,7 +59,6 @@ def lockfile_name(path_to_file):
 	file_name = '~lock_'+str(lkf_name)
 	return file_name
 
-
 def list_folder(folder):
     return os.listdir(os.getcwd()+os.sep+folder)
 
@@ -67,8 +66,7 @@ def list_col_responses(iterator, col_num=0, delimitor=';'):
 	for item in iterator:
 		yield item.split(delimitor)[col_num]
 
-
-def dict_from_table(iterator, col_num=0, delimitor=';'):
+def dict_from_table(iterator, col_num=0, delimitor='\t'):
 	output = OrderedDict()
 	for item in iterator:
 		num_of_cols = item.count(delimitor)
@@ -82,10 +80,35 @@ def dict_from_table(iterator, col_num=0, delimitor=';'):
 	return output
 
 
+def create_index(iterator_table, col_num_list=[0], delimitor='\t'):
+	output = dict()
+	
+	if isinstance(iterator_table[0], (tuple, list)):
+		use_delimitor = False
+	elif isinstance(iterator_table[0], str):
+		use_delimitor = True
 
-def create_target_file(filename, new_target_filename, file_folder='./', target_folder=os.getcwd()):
-	fullpath = file_folder + filename
-	os.system('ln -s -f "{obj_f}" "{target_folder}/{target_file}"'.format(obj_f=fullpath, target_folder=target_folder, target_file=new_target_filename))
+	for col in col_num_list:
+		idx = itertools.count()
+		for line in iterator_table:
+			if use_delimitor:
+				line = line.split(delimitor)
+			output[line[col]] = next(idx)
+	return output
+		
+
+
+
+
+def create_target_file(filename, target_filename, file_folder=os.curdir+os.sep, target_folder=os.getcwd()+os.sep):
+	source = file_folder + filename
+	destination = target_folde r + target_filename
+	
+	try: os.remove(destination)
+	except FileNotFoundError: pass
+	
+	os.symlink(source, destination)
+
 
 
 #Em processo de implementação
@@ -96,7 +119,7 @@ def point_to_json(path_to_file):
 			yield line
 
 #Em processo de implementação
-def load_text_db_line(text_db_file_generator):
+def load_text_db_line(text_db_file_generator, delimitor="\t"):
 	for line in text_db_file_generator:
 		yield line.split(':')
 
@@ -128,7 +151,6 @@ def save_text_db_file(novos_dados, path_to_file, tmp_folder=tmp_folder):
 
 	os.chdir(initfolder)
 	remove_lockfile(lockf)
-
 
 
 def load_json(path_to_file):

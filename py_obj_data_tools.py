@@ -186,7 +186,7 @@ class Extended_UniqueItem_List(list):
         return output
 
     def append(self, element):
-        if self.index(element):
+        if element in self:# self.index(element):
             return
 
         try:
