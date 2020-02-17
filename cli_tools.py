@@ -34,23 +34,27 @@ import tempfile
 import time
 import re
 
-from colored import fg, bg, attr
 from subprocess import getoutput
 from random import randrange
 from string import whitespace, punctuation, digits
-from collections import OrderedDict
+from collections import OrderedDict, Counter
 from copy import copy
+
+from cli_colors import amarelo, vermelho, branco, verde
 
 time.strptime('02/01/1986','%d/%m/%Y')
 
 tmp_folder = tempfile.gettempdir()
 
+
 def create_lockfile(lockf):
 	f = open(tmp_folder+os.sep+lockf,'w')
 	f.close()
 
+
 def remove_lockfile(lockf):
 	os.remove(tmp_folder+os.sep+lockf)
+
 
 def lockfile_name(path_to_file):
 	lkf_name = path_to_file.split(os.sep)[-1]
@@ -59,12 +63,15 @@ def lockfile_name(path_to_file):
 	file_name = '~lock_'+str(lkf_name)
 	return file_name
 
+
 def list_folder(folder):
     return os.listdir(os.getcwd()+os.sep+folder)
+
 
 def list_col_responses(iterator, col_num=0, delimitor=';'):
 	for item in iterator:
 		yield item.split(delimitor)[col_num]
+
 
 def dict_from_table(iterator, col_num=0, delimitor='\t'):
 	output = OrderedDict()
@@ -78,6 +85,7 @@ def dict_from_table(iterator, col_num=0, delimitor='\t'):
 		tmp_value = tmp_list
 		output[tmp_key] = tmp_value
 	return output
+
 
 
 def create_index(iterator_table, col_num_list=[0], delimitor='\t'):
@@ -97,16 +105,13 @@ def create_index(iterator_table, col_num_list=[0], delimitor='\t'):
 	return output
 		
 
-
-
-
 def create_target_file(filename, target_filename, file_folder=os.curdir+os.sep, target_folder=os.getcwd()+os.sep):
 	source = file_folder + filename
-	destination = target_folde r + target_filename
-	
+	destination = target_folder + target_filename
+
 	try: os.remove(destination)
 	except FileNotFoundError: pass
-	
+
 	os.symlink(source, destination)
 
 
@@ -177,6 +182,8 @@ def convert_generator_itens_to_json(generator):
 	for line in generator:
 		yield json.loads(line)
 
+
+
 #Em processo de implementação
 def exhaust_generator_and_print_cli_list(generator, form_file, columns_metadata):
 	form_file_data = load_json(form_file)
@@ -186,22 +193,6 @@ def exhaust_generator_and_print_cli_list(generator, form_file, columns_metadata)
 		current_list_column_wid.append(columns_metadata[field])
 	listagem_cli2(generator, current_list_column_wid)
 
-
-def make_float_list():
-    r = []
-    while True:
-        v = input("Value: ")
-        n = input("Frequenci: ")
-        ni = int(n)
-        vf = float(v)
-        while ni != 0:
-            r.append(vf)
-            ni -= 1
-        op = input('Insert other? [default:y] ')
-        if op == 'n':
-            break
-            
-    return r
 
 #Em processo de implementação
 def listagem_cli2(generator, cols):
@@ -301,12 +292,32 @@ def save_json2(novos_dados, path_to_file, tmp_folder=tmp_folder):
 # Tem de ser implementado o método isslice de itertools
 #
 
+def print_dict(dict_obj, break_line=False, colunas=[]):
+	if isinstance(dict_obj, (dict, OrderedDict, Counter)):
+		if colunas:
+			for col in colunas:
+				print(str(col)+': '+str(dict_obj[col]))
+		else:
+			for k, v in dict_obj.items():
+				print(str(k)+': '+str(v))
+		
+		if break_line: print('')
+	else:
+		print("Objeto fornecido não é um tipo conhecido de dicionário...")
+
+
+def print_generator_info(generator, title=False, title_color=amarelo, colunas=[], break_line=True):
+	if title:
+		print(title_color(title))
+	
+	if isinstance(generator, csv.DictReader):
+		for item in generator:
+			print_dict(item, break_line=break_line, colunas=colunas)
+
+
+
+
 def load_big_csv(csv_file, delimiter='\t', lineterminator='\n'):
-	'''
-	Acessa o conteúdo do arquivo CSV e o armazena na memória como um list_of_dicts.
-	'''
-	#o = []
-	#fields = load_csv_head(csv_file, delimiter=delimiter, lineterminator=lineterminator)
 	try:
 		with open(os.path.join(os.getcwd(), csv_file), encoding="utf8") as csv_fileobj:
 			rd = csv.DictReader(csv_fileobj, delimiter=delimiter, lineterminator=lineterminator)
@@ -938,33 +949,6 @@ def intersect_lists(a, b):
 	return o
 
 
-
-def strip_digits(s):
-	r = s
-	for i in digits:
-		r = r.replace(i,'')
-	return r
-
-
-def strip_simbols(s):
-	r = s
-	for i in punctuation+"/":
-		r = r.replace(i,"")
-	return r
-
-def strip_spaces(s):
-	r = s
-	for i in whitespace:
-		r = r.replace(i,"")
-	return r
-
-def strip_chars(s):
-	r = s
-	for i in "abcdefghijklmnopqrstuvxz":
-		r = r.replace(i,"")
-	return r
-
-
 def create_new_value_col_if_old_has_value(list_of_dicts, list_of_old_cols, interactive=True, script_descriptor=None):
 	num_of_cols = len(list_of_old_cols)
 
@@ -1206,108 +1190,7 @@ def mk_randnum_seq(num):
 	return output
 
 
-def branco(string):
-	return "{}{}{}".format(attr(0), string, attr(0))
 
-def vermelho(string):
-	return "{}{}{}".format(fg(1), string, attr(0))
-
-def azul_claro(string):
-	return "{}{}{}".format(fg(12), string, attr(0))
-
-def verde(string):
-	return "{}{}{}".format(fg(2), string, attr(0))
-
-def verde_limao(string):
-	return "{}{}{}".format(fg(41), string, attr(0))
-
-def verde_florescente(string):
-	return "{}{}{}".format(fg(10), string, attr(0))
-
-def verde_mar(string):
-	return "{}{}{}".format(fg(35), string, attr(0))
-
-def verde_agua(string):
-	return "{}{}{}".format(fg(37), string, attr(0))
-
-def amarelo(string):
-	return "{}{}{}".format(fg(11), string, attr(0))
-
-def rosa(string):
-	return "{}{}{}".format(fg(5), string, attr(0))
-
-def cinza(string):
-	return "{}{}{}".format(fg(8), string, attr(0))
-
-def salmao(string):
-	return "{}{}{}".format(fg(9), string, attr(0))
-
-
-def saida_verde(rotulo, valor, referencia='', escalonamento=[]):
-	if referencia != '':
-		if escalonamento != []:
-			partes = '('
-			n = len(escalonamento)
-			l_step = 0
-			while l_step != n:
-				if l_step == n-1:
-					partes += str(escalonamento[l_step])
-					partes += ')'
-				else:
-					partes += str(escalonamento[l_step])
-					partes += '/'
-				l_step += 1
-			return str(verde(rotulo) + ' ({})'.format(referencia) +": {} ".format(valor) + partes)
-		else:
-			return str(verde(rotulo) + ' ({})'.format(referencia) +": {} ".format(valor))
-	else:
-		return str(verde('{}'.format(rotulo)) +": {} ".format(valor))
-
-
-
-
-def saida_vermelha(rotulo, valor, referencia='', escalonamento=[]):
-	if referencia != '':
-		if escalonamento != []:
-			partes = '('
-			n = len(escalonamento)
-			l_step = 0
-			while l_step != n:
-				if l_step == n-1:
-					partes += str(escalonamento[l_step])
-					partes += ')'
-				else:
-					partes += str(escalonamento[l_step])
-					partes += '/'
-				l_step += 1
-			return str(vermelho(rotulo) + ' ({})'.format(referencia) +": {} ".format(valor) + partes)
-		else:
-			return str(vermelho(rotulo) + ' ({})'.format(referencia) +": {} ".format(valor))
-	else:
-		return str(vermelho('{}'.format(rotulo)) +": {} ".format(valor))
-
-
-
-
-def saida_rosa(rotulo, valor, referencia='', escalonamento=[]):
-	if referencia != '':
-		if escalonamento != []:
-			partes = '('
-			n = len(escalonamento)
-			l_step = 0
-			while l_step != n:
-				if l_step == n-1:
-					partes += str(escalonamento[l_step])
-					partes += ')'
-				else:
-					partes += str(escalonamento[l_step])
-					partes += '/'
-				l_step += 1
-			return str(rosa(rotulo) + ' ({})'.format(referencia) +": {} ".format(valor) + partes)
-		else:
-			return str(rosa(rotulo) + ' ({})'.format(referencia) +": {} ".format(valor))
-	else:
-		return str(rosa('{}'.format(rotulo)) +": {} ".format(valor))
 		
 
 
