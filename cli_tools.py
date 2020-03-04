@@ -40,19 +40,41 @@ from random import randrange
 from string import whitespace, punctuation, digits
 from collections import OrderedDict
 from copy import copy
+from decorators import only_tuple_and_list
 
 time.strptime('02/01/1986','%d/%m/%Y')
 
 tmp_folder = tempfile.gettempdir()
 
-def create_lockfile(lockf):
-	f = open(tmp_folder+os.sep+lockf,'w')
+def create_lockfile(filename):
+	"""Cria um arquivo vazio na pasta temporária para servir como trava
+	
+	Arguments:
+		filename {string} -- o nome do arquivo vazio
+	"""
+
+	f = open(tmp_folder+os.sep+filename,'w')
 	f.close()
 
-def remove_lockfile(lockf):
-	os.remove(tmp_folder+os.sep+lockf)
+def remove_lockfile(filename):
+	"""Remove o arquivo alvo da pasta temporária
+	
+	Arguments:
+		filename {string} -- the name of the file
+	"""
+
+	os.remove(tmp_folder+os.sep+filename)
 
 def lockfile_name(path_to_file):
+	"""Adciona um prefixo padrão a um arquivo alvo para criar um nome ao arquivo de trava
+	
+	Arguments:
+		path_to_file {string} -- o caminho até o arquivo alvo/fonte
+	
+	Returns:
+		{string} -- retorna o nome para o arquivo de trava
+	"""
+
 	lkf_name = path_to_file.split(os.sep)[-1]
 	if lkf_name.find(".") != -1 or lkf_name.find(".") != 0:
 		lkf_name = lkf_name.split(".")[0]
@@ -62,73 +84,423 @@ def lockfile_name(path_to_file):
 def list_folder(folder):
     return os.listdir(os.getcwd()+os.sep+folder)
 
-def list_col_responses(iterator, col_num=0, delimitor=';'):
+
+def list_col_responses(iterator, col_num=0, delimitor='\t'):
+	"""Retorna os valores de uma tabela, linha à linha, para a coluna selecionada
+	
+	Arguments:
+		iterator {table} -- é uma tabela NxN ou uma lista ou tupla com strings e um caractere delimitor
+	
+	Keyword Arguments:
+		col_num {int} -- o numero correspondente à coluna desejada (default: {0})
+		delimitor {str} -- o caractere/substring que demarca a separação das colunas (default: {'\t'})
+	
+	Yields:
+		{string} -- each cell will be returned separatedly
+	"""
+
 	for item in iterator:
 		yield item.split(delimitor)[col_num]
 
+
+def concat_dict_values(dictionary, key, value):
+	"""Verifica se um dicionário possui uma chave. Se possuir, cria uma lista no lado dos valores para preservar valores antigos
+	
+	Arguments:
+		dictionary {dict} -- dicionário onde o par key-value deverá ser inserido
+		key {any} -- qualquer chave de dicionário válida
+		value {any} -- qualquer valor de dicionário válido
+	
+	Returns:
+		{dict} -- retorna o dicionário modificado
+	"""
+
+	nested_list = False
+	if dictionary.get(key):
+		if isinstance(dictionary[key], list):
+			if isinstance(dictionary[key][0], list):
+				nested_list = True
+
+		old_value = dictionary[key]
+		dictionary[key] = [value]
+
+		if nested_list:
+			old_value.reverse()
+			for sub_list in old_value:
+				dictionary[key].insert(0, sub_list)
+		else:
+			dictionary[key].insert(0, old_value)
+	return dictionary
+
+
 def dict_from_table(iterator, col_num=0, delimitor='\t'):
+	"""Converte uma tabela em um dicionário utilizando os valores da coluna selecionada como chaves
+	
+	Arguments:
+		iterator {table} -- é uma tabela NxN ou uma lista ou tupla com strings e um caractere delimitor
+	
+	Keyword Arguments:
+		col_num {int} -- número da coluna de referência (default: {0})
+		delimitor {str} -- o caractere/substring que demarca a separação das colunas (default: {'\t'})
+	
+	Returns:
+		{dict} -- retorna um OrderedDict
+
+	Observation:
+		Colisões serão aninhadas conforme a função 'concat_dict_values'
+	"""
+
+	assert isinstance(iterator, (tuple, list)), "Iterador não suportado, utilizar 'tuple' ou 'list' como argumento."
+	assert isinstance(iterator[0], (list, str)), "As linhas da tabela devem ser to tipo 'list'."
+
+	use_delimitor = check_table_type(iterator)
+
 	output = OrderedDict()
 	for item in iterator:
-		num_of_cols = item.count(delimitor)
-		indexes = list(range(0,num_of_cols+1))
+		if use_delimitor:
+			num_of_cols = item.count(delimitor)+1
+		else:
+			num_of_cols = len(item)
+		
+		indexes = list(range(0,num_of_cols))
 		indexes.remove(col_num)
-		tmp_list = item.split(delimitor)
+
+		if use_delimitor:
+			tmp_list = item.split(delimitor)
+		else:
+			tmp_list = item
+
 		tmp_key = tmp_list[col_num]
 		tmp_list.remove(tmp_list[col_num])
 		tmp_value = tmp_list
-		output[tmp_key] = tmp_value
+		
+		if output.get(tmp_key):
+			output = concat_dict_values(output, tmp_key, tmp_value)
+		else:
+			output[tmp_key] = tmp_value
+
 	return output
 
 
-def create_index(iterator_table, col_num_list=[0], delimitor='\t'):
+def create_col_index(list_of_labels):
+	"""Cria um índice para as colunas de uma tabela
+	
+	Arguments:
+		list_of_labels {list|tuple} -- lista com os nomes das colunas na mesma ordem da tabela original
+	
+	Returns:
+		{dict} -- retorna um dicionário com rótulos apontando para os indexes
+	"""
+
+	assert isinstance(iterator, (tuple, list)), "Iterador não suportado, utilizar 'tuple' ou 'list' como argumento."
+
+	output = dict()
+
+	n = itertools.count()
+
+	for col in list_of_labels:
+		idx = next(n)
+		output[col] = idx
+	
+	return output
+
+
+def create_line_index(iterator, col_num_list=[0], delimitor='\t'):
+	"""Cria um dicionário a partir de uma tabela em que os valores das colunas selecionadas apontam para o número da linha da tabela original
+	
+	Arguments:
+		iterator {table} -- é uma tabela NxN ou uma lista ou tupla com strings e um caractere delimitor
+	
+	Keyword Arguments:
+		col_num_list {list} -- lista com o numero das colunas que serão indexadas (default: {[0]})
+		delimitor {str} -- o caractere/substring que demarca a separação das colunas (default: {'\t'})
+	
+	Returns:
+		{dict} -- retorna um dicionário com referências para as linhas da tabela original
+	"""
+	
+	assert isinstance(iterator, (tuple, list)), "Iterador não suportado, utilizar 'tuple' ou 'list' como argumento."
+
 	output = dict()
 	
-	if isinstance(iterator_table[0], (tuple, list)):
-		use_delimitor = False
-	elif isinstance(iterator_table[0], str):
-		use_delimitor = True
-
+	use_delimitor = check_table_type(iterator)
+	
 	for col in col_num_list:
 		idx = itertools.count()
-		for line in iterator_table:
+		for line in iterator:
+			n = next(idx)
 			if use_delimitor:
 				line = line.split(delimitor)
-			output[line[col]] = next(idx)
+			if output.get(line[col]):
+				output = concat_dict_values(output, line[col], n)
+			else:
+				output[line[col]] = n
 	return output
 		
 
-
-
-
 def create_target_file(filename, target_filename, file_folder=os.curdir+os.sep, target_folder=os.getcwd()+os.sep):
+	"""Cria um link simbólico para o arquivo alvo
+	
+	Arguments:
+		filename {string} -- o nome do arquivo fonte ou de origem
+		target_filename {string} -- o nome do arquivo de link que será criado
+	
+	Keyword Arguments:
+		file_folder {string} -- a pasta onde o arquivo de origem está localizada (default: {os.curdir+os.sep})
+		target_folder {string} -- a pasta onde o arquivo de link será criado (default: {os.getcwd()+os.sep})
+	"""
+
 	source = file_folder + filename
-	destination = target_folde r + target_filename
+	destination = target_folder + target_filename
 	
 	try: os.remove(destination)
 	except FileNotFoundError: pass
 	
 	os.symlink(source, destination)
 
+def check_table_type(iterator):
+	"""Verifica o tipo de tabela incluida no argumento
+	
+	Arguments:
+		iterator {tabela} -- é uma tabela NxN ou uma lista ou tupla com strings
+	
+	Returns:
+		{bool} -- retorna False se a tabela for uma lista/tupla aninhada com listas/tuplas
+		{bool} -- retorna True se a tabela for uma lista/tupla com strings
+	"""
+
+	assert isinstance(iterator, (tuple, list)), "Iterador não suportado, utilizar 'tuple' ou 'list' como argumento."
+	
+	if isinstance(iterator[0], (tuple, list)):
+		return False
+	elif isinstance(iterator[0], str):
+		return True
+
+		
 
 
-#Em processo de implementação
-def point_to_json(path_to_file):
-	print('Generating {}'.format(path_to_file))
-	with open(path_to_file) as f:
-		for line in f:#.readlines():
-			yield line
+def ask_for_col_labels(num_of_cols, table_first_line, use_delimitor=True, delimitor='\t'):
+	"""Retorna um dicionário com os nomes das colunas e indexes de referência
+	
+	Arguments:
+		num_of_cols {int} -- quantidade de colunas da tabela
+		table_first_line {table} -- matrix 1xN ou string com valores separados pelo delimitador
+	
+	Keyword Arguments:
+		use_delimitor {bool} -- utiliza o delimitador no caso da amostra de dados ser uma string com delimitador (default: {True})
+		delimitor {str} -- o caractere/substring que demarca a separação das colunas (default: {'\t'})
 
-#Em processo de implementação
-def load_text_db_line(text_db_file_generator, delimitor="\t"):
-	for line in text_db_file_generator:
-		yield line.split(':')
+	Returns:
+		{list} -- retorna uma lista
+	"""
+
+	assert isinstance(num_of_cols, int), "Número de colunas deve ser do tipo 'int'."
+	assert isinstance(table_first_line, (list, str, tuple)), "Linha da tabela deve ser 'list', 'tuple' ou 'str'."
+
+	output = []
+	n = itertools.count() 
+	
+	if use_delimitor: table_first_line = table_first_line.split(delimitor)
+
+	while True:
+		idx = next(n)
+		print('Indique o nome da coluna que armazena o dado: {}'.format(table_first_line[idx]))
+		label = input(' :$')
+		output.append(label)
+		if len(output) == num_of_cols: break
+	
+	return output
 
 
-#Em processo de implementação
-def load_text_db_file(path_to_file):
-	with open(path_to_file) as f:
-		for line in f.readlines():
-			yield line
+def string_table_to_int_matrix(iterator, reference_data=False, delimitor='\t'):
+	"""Converte uma tabela com strings em uma matriz numérica a partir de uma referência prévia ou a partir da atribuição arbitrária de números aos valores dos campos textuais na ordem em que estes são apresentados
+	
+	Returns:
+		{tupla} -- uma tupla com dois elementos, o primeiro a matriz com as respostas convertidas em números, o segundo uma lista de dicionários com as referências
+	"""
+
+	assert isinstance(iterator, (tuple, list)), "Iterador não suportado, utilizar 'tuple' ou 'list' como argumento."
+
+	numeric_matrix = []
+
+	use_delimitor = check_table_type(iterator)
+	
+	if use_delimitor:
+		num_of_cols = len(iterator[0].split(delimitor))
+	else:
+		num_of_cols = len(iterator[0])
+
+	if not reference_data:
+		reference_list = []
+	else:
+		reference_list = reference_data
+		assert len(reference_data) == num_of_cols, "A quantidade de dicionários na lista de referência de valores deve corresponder ao número de colunas da tabela"
+	
+	for n in range(num_of_cols):
+		reference_list.append({})
+
+	for line in iterator:
+		if use_delimitor:
+			line = line.split(delimitor)
+		
+		n = itertools.count()
+		numeric_matrix_line = []
+
+		for col_idx in range(len(line)):
+			ref_idx = next(n)
+			print(line[col_idx])
+			if not reference_list[ref_idx].get(line[col_idx]): 
+				novo_escore = len(reference_list[ref_idx]) + 1
+				reference_list[ref_idx][line[col_idx]] = novo_escore
+				numeric_matrix_line.append(novo_escore)
+			else:
+				numeric_matrix_line.append(reference_list[ref_idx][line[col_idx]])
+
+		numeric_matrix.append(numeric_matrix_line)
+
+	return numeric_matrix, reference_list
+		
+
+
+def read_all_text_json_file(filename):
+	"""Retorna todas as linhas do arquivo tipo 'text_json_file'
+	
+	Arguments:
+		filename {string} -- nome do arquivo de tipo text_json_file
+	
+	Yields:
+		{pyObject} -- cada linha é retornada como um objeto python, conforme o formato JSON usado
+	"""
+	
+	with open(filename) as f:
+		for line in f:
+			yield json.loads(line)
+
+
+def read_target_line_on_text_json_file(filename, line_number):
+	"""Retorna apenas a linha selecionada para o arquivo de tipo text_json_file
+	
+	Arguments:
+		filename {string} -- nome do arquivo de tipo text_json_file
+		line_number {int} -- nomero da linha que deve ser retornada
+	
+	Returns:
+		{pyObject} -- retorna um objeto python, conforme o formato JSON usado
+	"""
+
+	assert isinstance(line_number, int)
+
+	f = open(filename)
+	output = itertools.islice(f, line_number, line_number+1)
+	output = json.loads(next(output))
+	f.close()
+	return output
+
+
+
+
+
+def read_all_text_table_file(filename, delimitor='\t'):
+	"""Ler todas as linhas de uma tabela em formato texto
+	
+	Arguments:
+		filename {string} -- nome do arquivo da tabela
+	
+	Keyword Arguments:
+		delimitor {string} -- caractere ou substring que delimita as colunas (default: {'\t'})
+	
+	Yields:
+		{string} -- retorna as linhas uma a uma...
+	"""
+
+	with open(filename) as f:
+		for line in f:
+			yield split_and_strip(line, delimitor=delimitor)
+
+
+def split_and_strip(text, delimitor='\t'):
+	"""Separa uma string com base no delimitador e retira espaços em branco no início e final dos elementos
+	
+	Arguments:
+		texto {string} -- texto ou string de entrada
+	
+	Keyword Arguments:
+		delimitor {string} -- caractere ou substring que delimita os campos (default: {'\t'})
+	
+	Returns:
+		{list} -- retorna uma lista com os elementos
+	"""
+	
+	output = text.split(delimitor)
+	idx = itertools.count()
+	for i in output: output[next(idx)] = i.strip()
+	return output
+
+
+
+def read_target_line_on_text_table_file(filename, line_number, delimitor='\t'):
+	"""Lê uma linha alvo de uma tabela em formato texto e retorna seu conteúdo, bem como o rótulo dos campos (primeira linha)
+	
+	Arguments:
+		filename {string} -- nome do arquivo de tabela em formato texto
+		line_number {int} -- linha alvo
+	
+	Keyword Arguments:
+		delimitor {str} -- caractere ou substring que delimita os campos (default: {'\t'})
+	
+	Returns:
+		{dict} -- retorna dicionário com nome/ordem dos campos e dados da linha selecionada
+	"""
+	assert isinstance(line_number, int)
+
+	with open(filename) as f:
+		fields = itertools.islice(f, 0, 1)
+		fields = split_and_strip(next(fields), delimitor=delimitor) 
+	
+	with open(filename) as f:
+		output = itertools.islice(f, line_number, line_number+1)
+		output = split_and_strip(next(output), delimitor=delimitor)
+		output = dict(zip(fields, output))
+
+	return {'fields': fields, 'data': output}
+
+
+def save_text_table_file(filename, new_line, delimitor='\t', constrain_cols=True):
+	"""Adiciona linha no final de uma tabela em texto
+	
+	Arguments:
+		filename {string} -- arquivo de tabela em formato texto
+		new_line {dict, tuple, list} -- novo conteúdo a ser inserido do arquivo
+	
+	Keyword Arguments:
+		delimitor {str} -- caractere ou substring que delimita os campos (default: {'\t'})
+		constrain_cols {bool} -- ativa/desativa validação de colunas e posição (default: {True})
+	"""
+
+	if constrain_cols:
+		assert isinstance(new_line, dict), "Para verificação das colunas é necessário passar os valores em um 'dict'"
+		with open(filename) as f:
+			fields = split_and_strip(next(f), delimitor=delimitor)
+		assert len(fields) == len(new_line), "A quantidade de colunas no dicionário não corresponde à do arquivo"
+		for key in new_line:
+			assert key in fields, "O campo '{}' não existe no arquivo '{}'".format(key, filename)
+
+	else:
+		assert isinstance(new_line, (tuple, list)), "O argumento 'new_line' deve ser uma 'list' ou 'tuple'"
+		new_line = delimitor.join(new_line) + os.linesep
+	
+	with open(filename, 'a') as f:
+		if constrain_cols:
+			new_line_ordered_info = []
+			for field in fields:
+				new_line_ordered_info.append(new_line[field])
+			new_line = delimitor.join(new_line_ordered_info) + os.linesep
+			f.write(new_line)
+		else:
+			f.write(new_line)
+	
+
+
 
 #Em processo de implementação
 def save_text_db_file(novos_dados, path_to_file, tmp_folder=tmp_folder):
@@ -153,10 +525,12 @@ def save_text_db_file(novos_dados, path_to_file, tmp_folder=tmp_folder):
 	remove_lockfile(lockf)
 
 
+
 def load_json(path_to_file):
 	with open(path_to_file) as f:
 		data = f.read()
 		return json.loads(data)
+
 
 #Em processo de implementação
 def print_json_file_v2(path_to_file_responses_file, path_to_form_file, columns_metadata, lines=None):
@@ -1404,12 +1778,6 @@ def input_op(lista_de_opcoes_validas, input_label=False, label_color=branco, war
 		else:
 			return op
 
-
-def split_and_strip(string, list_item_delimitor=','):
-	output = string.split(list_item_delimitor)
-	idx = itertools.count()
-	for i in output: output[next(idx)] = i.strip()
-	return output
 
 
 def convert_items_to_int(original_list):
