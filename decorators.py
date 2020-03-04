@@ -39,3 +39,14 @@ def limpar_a_tela(func):
 		limpar()
 		return func(*args, **kargs)
 	return wrapper
+
+
+def only_tuple_and_list(func):
+	def wrapper(*args, **kargs):
+		if not isinstance(args, (tuple, list)):
+			err = "Iterador não suportado, utilizar 'tuple' ou 'list' como argumento."
+			raise ValueError(err)
+		return func(*args, **kargs)
+	return wrapper
+
+
