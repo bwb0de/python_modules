@@ -500,6 +500,14 @@ def save_text_table_file(filename, new_line, delimitor='\t', constrain_cols=True
 			f.write(new_line)
 	
 
+def return_bisect_lists(input_list):
+
+	assert len(input_list) >= 2
+
+	left_side = input_list[:len(input_list)//2]
+	middle_element = input_list[len(input_list)//2]
+	right_side = input_list[(len(input_list)//2)+1:]
+	return left_side, middle_element, right_side
 
 
 #Em processo de implementação
