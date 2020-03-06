@@ -182,11 +182,11 @@ def dict_from_table(iterator, col_num=0, delimitor='\t'):
 	return output
 
 
-def create_col_index(list_of_labels):
+def create_col_index(iterator):
 	"""Cria um índice para as colunas de uma tabela
 	
 	Arguments:
-		list_of_labels {list|tuple} -- lista com os nomes das colunas na mesma ordem da tabela original
+		iterator {list|tuple} -- lista com os nomes das colunas na mesma ordem da tabela original
 	
 	Returns:
 		{dict} -- retorna um dicionário com rótulos apontando para os indexes
@@ -198,7 +198,7 @@ def create_col_index(list_of_labels):
 
 	n = itertools.count()
 
-	for col in list_of_labels:
+	for col in iterator:
 		idx = next(n)
 		output[col] = idx
 	
