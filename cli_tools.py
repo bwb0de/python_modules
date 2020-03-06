@@ -36,7 +36,7 @@ import re
 
 from colored import fg, bg, attr
 from subprocess import getoutput
-from random import randrange
+from random import randrange, randint
 from string import whitespace, punctuation, digits
 from collections import OrderedDict
 from copy import copy
@@ -428,6 +428,9 @@ def split_and_strip(text, delimitor='\t'):
 	Returns:
 		{list} -- retorna uma lista com os elementos
 	"""
+
+	assert isinstance(text, str)
+	assert isinstance(delimitor, str)
 	
 	output = text.split(delimitor)
 	idx = itertools.count()
@@ -449,7 +452,9 @@ def read_target_line_on_text_table_file(filename, line_number, delimitor='\t'):
 	Returns:
 		{dict} -- retorna dicionário com nome/ordem dos campos e dados da linha selecionada
 	"""
+	assert isinstance(filename, str)
 	assert isinstance(line_number, int)
+	assert isinstance(delimitor, str)
 
 	with open(filename) as f:
 		fields = itertools.islice(f, 0, 1)
@@ -474,6 +479,10 @@ def save_text_table_file(filename, new_line, delimitor='\t', constrain_cols=True
 		delimitor {str} -- caractere ou substring que delimita os campos (default: {'\t'})
 		constrain_cols {bool} -- ativa/desativa validação de colunas e posição (default: {True})
 	"""
+
+	assert isinstance(filename, str)
+	assert isinstance(delimitor, str)
+	assert isinstance(constrain_cols, bool)
 
 	if constrain_cols:
 		assert isinstance(new_line, dict), "Para verificação das colunas é necessário passar os valores em um 'dict'"
@@ -536,6 +545,9 @@ def bisect_search(search_value, input_list):
 		{bool} -- retorna True se existir, False se não
 	"""
 
+	assert isinstance(search_value, (str, int, float))
+	assert isinstance(input_list, list)
+
 	input_size = len(input_list) 
 
 	if input_list == []:
@@ -571,6 +583,8 @@ def return_bisect_lists_idx(input_list, slice_ref, current_mid_idx=0):
 	"""
 
 	assert isinstance(input_list, list)
+	assert isinstance(slice_ref, (list, tuple))
+	assert isinstance(current_mid_idx, int)
 	
 	init_idx, end_idx = slice_ref
 	sliced_list = input_list[init_idx:end_idx]
@@ -604,6 +618,11 @@ def bisect_search_idx(search_value, input_list, slice_ref, current_mid_idx=0):
 		{int} -- retorna a posição do elemento na lista, se ele existir
 		{bool} -- retorna False se o elemento não existir
 	"""
+
+	assert isinstance(search_value, (str, int, float)), "O argumento 'search_value' pode ser do tipo string, inteiro ou float"
+	assert isinstance(input_list, list), "O argumento 'input_list' deve ser do tipo lista"
+	assert isinstance(slice_ref, (tuple, list)), "O argumento 'slice_ref', deve ser uma tupla ou lista"
+	assert isinstance(current_mid_idx, int), "O argumento 'current_mid_idx' deve ser um número inteiro"
 
 	init_idx, end_idx = slice_ref
 	sliced_list = input_list[init_idx:end_idx]
@@ -639,57 +658,45 @@ def load_json(filename, file_folder='.'):
 		{pyObject} -- retorna um objeto python conforme a estrutura do arquivo JSON
 	"""
 
+	assert isinstance(filename, str)
+	assert isinstance(file_folder, str)
+
 	with open(file_folder+os.sep+filename) as f:
 		data = f.read()
 		return json.loads(data)
 
 
-#Em processo de implementação
-def print_json_file_v2(path_to_file_responses_file, path_to_form_file, columns_metadata, lines=None):
-	assert (lines == None) or (type(lines) == tuple)
+def make_random_float_list(num_of_elements, min_val=0, max_val=10000):
+	"""Retorna uma lista contendo a quantidade definida de floats gerados aleatoriamente
+	
+	Arguments:
+		num_of_elements {int} -- a quantidade de elementos da lista de retorno
+	
+	Keyword Arguments:
+		min_val {int} -- o valor de referencia mínimo para produção de números aleatórios (default: {0})
+		max_val {int} -- o valor de referencia máximo para produção de números aleatórios (default: {10000})
+	
+	Returns:
+		{list} -- o retorno contém pontos flutuantes com duas casas decimais
+	"""
 
-	with open(path_to_file_responses_file) as f:
-		print("Size of 'f':", sys.getsizeof(f))
-		if type(lines) == tuple:
-			linha = itertools.islice(f, lines[0], lines[1])
-			print("Size of 'linha':", sys.getsizeof(linha))
-			print(json.loads(next(linha)))
-		else:
-			#exhaust_generator_and_print(convert_generator_itens_to_json(f), count_lines=True)
-			exhaust_generator_and_print_cli_list(convert_generator_itens_to_json(f), path_to_form_file, columns_metadata)
+	assert isinstance(num_of_elements, int)
+	assert isinstance(min_val, int)
+	assert isinstance(max_val, int)
+	assert min_val < max_val, "O argumento 'min_val' sempre deve ser menor que 'max_val'"
+	
+	output = []
 
-#Em processo de implementação
-def convert_generator_itens_to_json(generator):
-	for line in generator:
-		yield json.loads(line)
-
-#Em processo de implementação
-def exhaust_generator_and_print_cli_list(generator, form_file, columns_metadata):
-	form_file_data = load_json(form_file)
-	fields_to_list = form_file_data['form_lst_fields'].split(', ')
-	current_list_column_wid = []
-	for field in fields_to_list:
-		current_list_column_wid.append(columns_metadata[field])
-	listagem_cli2(generator, current_list_column_wid)
+	while num_of_elements:
+		output.append(randint(min_val,max_val)/100)
+		num_of_elements -= 1
+			
+	return output
 
 
-def make_float_list():
-    r = []
-    while True:
-        v = input("Value: ")
-        n = input("Frequenci: ")
-        ni = int(n)
-        vf = float(v)
-        while ni != 0:
-            r.append(vf)
-            ni -= 1
-        op = input('Insert other? [default:y] ')
-        if op == 'n':
-            break
-            
-    return r
 
-#Em processo de implementação
+
+#Subir esta função e refatorá-la...
 def listagem_cli2(generator, cols):
 	visual_count = itertools.count(start=1)
 	for linha in generator:
