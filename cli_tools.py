@@ -502,13 +502,72 @@ def save_text_table_file(filename, new_line, delimitor='\t', constrain_cols=True
 
 def return_bisect_lists(input_list):
 
-	assert len(input_list) >= 2
+	input_size = len(input_list) 
+	
+	if input_size == 1:	return input_list[0]
+	elif input_size == 0: return None
 
-	left_side = input_list[:len(input_list)//2]
-	middle_element = input_list[len(input_list)//2]
-	right_side = input_list[(len(input_list)//2)+1:]
+	left_side = input_list[:input_size//2]
+	middle_element = input_list[input_size//2]
+	right_side = input_list[(input_size//2)+1:]
+
 	return left_side, middle_element, right_side
 
+def bisect_search(value, input_list):
+
+	input_size = len(input_list) 
+
+	if input_list == []:
+		return False
+	elif input_size == 1:
+		middle_element = return_bisect_lists(input_list)
+		if value == middle_element: return True
+		else:return False
+	else:
+		left_side, middle_element, right_side = return_bisect_lists(input_list)
+		if value == middle_element: return True
+		elif value < middle_element: return bisect_search(value, left_side)
+		else: return bisect_search(value, right_side)	
+
+
+def return_bisect_lists_idx(input_list, current_min_idx, input_list_original_size):
+
+	input_size = len(input_list) 
+	
+	if input_size == 1:	return 0 
+	elif input_size == 0: return None
+
+	left_side = (0, input_size//2)
+	middle_element = input_size//2
+	right_side = ((input_size//2)+1, input_list_original_size) 
+
+	return left_side, middle_element, right_side
+
+
+'''
+
+def bisect_search_idx(value, input_list, current_min_idx, input_list_original_size):
+
+	input_size = len(input_list) 
+
+	if input_list == []:
+		return False
+	elif input_size == 1:
+		middle_element = return_bisect_lists_idx(input_list, current_min_idx, input_list_original_size)
+		if value == input_list[middle_element]: return current_min_idx + middle_element
+		else: return False
+	else:
+		left_side, middle_element, right_side = return_bisect_lists_idx(input_list, current_min_idx, input_list_original_size)
+		if value == input_list[middle_element]: 
+			return middle_element
+		elif value < input_list[middle_element]:
+			new_min_idx = current_min_idx - middle_element
+			return bisect_search_idx(value, input_list[left_side[0]:left_side[1]], new_min_idx, input_list_original_size)
+		else:
+			new_min_idx = current_min_idx + middle_element
+			return bisect_search_idx(value, input_list[right_side[0]:right_side[1]], new_min_idx, input_list_original_size)	
+
+'''
 
 #Em processo de implementação
 def save_text_db_file(novos_dados, path_to_file, tmp_folder=tmp_folder):
