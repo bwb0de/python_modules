@@ -183,6 +183,28 @@ def test_read_target_line_on_text_table_file():
     os.remove('text_table_file.test')
 
 
+def test_create_column_metainfo_file():
+    with open('text_table_file.test', 'w') as f:
+        f.write(table5)
+    create_column_metainfo_file('text_table_file.test', delimitor=':', col_space=3)
+    assert os.path.isfile('text_table_file.test')
+    metadata = load_json('metainfo_text_table_file.test', file_folder=tmp_folder)
+    assert isinstance(metadata, dict)
+    assert metadata['nome'] == 9
+    assert metadata['idade'] == 5
+    os.remove('text_table_file.test')
+
+
+
+def test_print_text_table_file():
+    with open('text_table_file.test', 'w') as f:
+        f.write(table5)
+    print_text_table_file('text_table_file.test', delimitor=':')
+    print_text_table_file('text_table_file.test', delimitor=':', count_lines=False)
+    os.remove('text_table_file.test')
+
+
+
 def test_return_bisect_lists():
     assert return_bisect_lists([1,2,3,4,5,6,7,8,9]) == ([1,2,3,4], 5, [6,7,8,9])
     assert return_bisect_lists([1,2,3,4,5,6,7,8]) == ([1,2,3,4], 5, [6,7,8])
