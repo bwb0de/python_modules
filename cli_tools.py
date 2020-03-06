@@ -76,8 +76,8 @@ def lockfile_name(path_to_file):
 	"""
 
 	lkf_name = path_to_file.split(os.sep)[-1]
-	if lkf_name.find(".") != -1 or lkf_name.find(".") != 0:
-		lkf_name = lkf_name.split(".")[0]
+	#if lkf_name.find(".") != -1 or lkf_name.find(".") != 0:
+	#	lkf_name = lkf_name.split(".")[0]
 	file_name = '~lock_'+str(lkf_name)
 	return file_name
 
@@ -469,7 +469,7 @@ def read_target_line_on_text_table_file(filename, line_number, delimitor='\t'):
 
 
 
-def create_column_metainfo_file(text_table_filename, delimitor='\t', col_space=2):
+def create_column_metainfo_file(text_table_filename, text_table_file_folder=os.curdir,  delimitor='\t', col_space=2):
 	"""Cria, na pasta temporária, um arquico com informações da largura das colunas de uma tabela de texto
 	
 	Arguments:
@@ -485,7 +485,9 @@ def create_column_metainfo_file(text_table_filename, delimitor='\t', col_space=2
 	assert isinstance(delimitor, str)
 	assert isinstance(col_space, int)
 	
-	output_file = tmp_folder + os.sep + 'metainfo_'+text_table_filename
+	output_file = 'metainfo_'+text_table_filename
+	#output_file = tmp_folder + os.sep + 'metainfo_'+text_table_filename
+	
 	text_table_generator = read_all_text_table_file(text_table_filename, delimitor=delimitor)
 	
 	fields = next(text_table_generator)
@@ -505,7 +507,7 @@ def create_column_metainfo_file(text_table_filename, delimitor='\t', col_space=2
 				output_col_size[col_idx] = len(value)+col_space
 	
 	output_info = dict(zip(fields, output_col_size))
-	save_json(output_info, output_file)
+	save_json(output_info, output_file, file_folder=tmp_folder)
 
 
 
@@ -732,7 +734,7 @@ def bisect_search_idx(search_value, input_list, slice_ref, current_mid_idx=0):
 			return False
 
 
-def load_json(filename, file_folder='.'):
+def load_json(filename, file_folder=os.curdir):
 	"""Carrega um arquivo JSON do disco rígido na memória
 	
 	Arguments:
@@ -749,6 +751,36 @@ def load_json(filename, file_folder='.'):
 	with open(file_folder+os.sep+filename) as f:
 		data = f.read()
 		return json.loads(data)
+
+
+
+def save_json(info, filename, file_folder=os.curdir, tmp_folder=tmp_folder):
+	"""Grava o um arquivo JSON no disco rígido
+	
+	Arguments:
+		info {list|dict} -- informação a ser gravada em disco
+		filename {string} -- nome do arquivo onde a informação será armazenada
+	
+	Keyword Arguments:
+		file_folder {string} -- pasta onde o arquivo está localizado (default: {os.curdir})
+		tmp_folder {string} -- pasta temporária do sistema (default: {tmp_folder})
+	"""
+
+	lockf = lockfile_name(filename)
+
+	while True:
+		if os.path.isfile(tmp_folder + os.sep + lockf):
+			time.sleep(0.1)
+		else:
+			create_lockfile(lockf)
+			break
+
+	with open(file_folder + os.sep + filename, 'w') as f:
+		f.write(json.dumps(info, ensure_ascii=False, indent=4))
+
+	remove_lockfile(lockf)
+
+
 
 
 def make_random_float_list(num_of_elements, min_val=0, max_val=10000):
@@ -780,126 +812,89 @@ def make_random_float_list(num_of_elements, min_val=0, max_val=10000):
 
 
 
-
-
-
-
-
-def save_json(novos_dados, path_to_file, tmp_folder=tmp_folder):
-	lockf = lockfile_name(path_to_file)
-	initfolder = os.getcwd()
-	nfo = path_to_file.split('/')
-	fname = nfo[-1]
-	path = path_to_file.replace(fname, '')
-
-	while True:
-		if os.path.isfile(tmp_folder+os.sep+lockf):
-			time.sleep(0.1)
-		else:
-			create_lockfile(lockf)
-			break
-
-	os.chdir(path.replace('/', os.sep))
-	with open(path_to_file, 'w') as f:
-		f.write(json.dumps(novos_dados, ensure_ascii=False, indent=4))
-
-
-	os.chdir(initfolder)
-	remove_lockfile(lockf)
-
-#
-# Em processo de implementação, conversão de list_of_dicts para arquivo de texto com dicts listados linha à linha...
-#
-# O objetivo dessa implementação é ganhar perfomance e diminuir consumo de memória com o
-# itertools.isslice... Para que isso funcione a insersão deve ser feita de forma centralizada pelo
-# worker...
-#
-
-def save_json2(novos_dados, path_to_file, tmp_folder=tmp_folder):
-	lockf = lockfile_name(path_to_file)
-	initfolder = os.getcwd()
-	nfo = path_to_file.split('/')
-	fname = nfo[-1]
-	path = path_to_file.replace(fname, '')
-
-	while True:
-		if os.path.isfile(tmp_folder+os.sep+lockf):
-			time.sleep(0.1)
-		else:
-			create_lockfile(lockf)
-			break
-
-	os.chdir(path.replace('/', os.sep))
-	with open(path_to_file, 'w') as f:
-		for l in novos_dados:
-			f.write(json.dumps(l, ensure_ascii=False))
-			f.write(os.linesep)
-
-	os.chdir(initfolder)
-	remove_lockfile(lockf)
-
-
 #
 # Em processo de implementação
 #
 # Tem de ser implementado o método isslice de itertools
 #
 
-def load_big_csv(csv_file, delimiter='\t', lineterminator='\n'):
+def load_big_csv(csv_file, delimitor='\t', lineterminator='\n'):
 	'''
 	Acessa o conteúdo do arquivo CSV e o armazena na memória como um list_of_dicts.
 	'''
-	#o = []
-	#fields = load_csv_head(csv_file, delimiter=delimiter, lineterminator=lineterminator)
+
+	fields = load_csv_head(csv_file, delimitor=delimitor, lineterminator=lineterminator)
+
 	try:
 		with open(os.path.join(os.getcwd(), csv_file), encoding="utf8") as csv_fileobj:
-			rd = csv.DictReader(csv_fileobj, delimiter=delimiter, lineterminator=lineterminator)
-			for row in rd:
-				yield row
-	except:
-		with open(os.path.join(os.getcwd(), csv_file), encoding="cp1252") as csv_fileobj:
-			rd = csv.DictReader(csv_fileobj, delimiter=delimiter, lineterminator=lineterminator)
-			for row in rd:
-				yield row
-
-
-
-def load_csv(csv_file, delimiter='\t', lineterminator='\n'):
-	'''
-	Acessa o conteúdo do arquivo CSV e o armazena na memória como um list_of_dicts.
-	'''
-	o = []
-	fields = load_csv_head(csv_file, delimiter=delimiter, lineterminator=lineterminator)
-	try:
-		with open(os.path.join(os.getcwd(), csv_file), encoding="utf8") as csv_fileobj:
-			rd = csv.DictReader(csv_fileobj, delimiter=delimiter, lineterminator=lineterminator)
+			rd = csv.DictReader(csv_fileobj, delimitor=delimitor, lineterminator=lineterminator)
 			for row in rd:
 				ordered_row = OrderedDict()
 				for col in fields:
 					ordered_row[col] = row[col]
-				o.append(ordered_row)
+				yield ordered_row[col]
 	except:
 		with open(os.path.join(os.getcwd(), csv_file), encoding="cp1252") as csv_fileobj:
-			rd = csv.DictReader(csv_fileobj, delimiter=delimiter, lineterminator=lineterminator)
+			rd = csv.DictReader(csv_fileobj, delimitor=delimitor, lineterminator=lineterminator)
 			for row in rd:
 				ordered_row = OrderedDict()
 				for col in fields:
 					ordered_row[col] = row[col]
-				o.append(ordered_row)
-	return o
+				yield ordered_row[col]
 
 
-def load_csv_head(csv_file, delimiter='\t', lineterminator='\n'):
+
+
+def load_csv(csv_file, delimitor='\t', lineterminator='\n'):
+	'''
+	Acessa o conteúdo do arquivo CSV e o armazena na memória como um list_of_dicts.
+	'''
+	
+	full_csv_info = []
+	
+	fields = load_csv_head(csv_file, delimitor=delimitor, lineterminator=lineterminator)
+	
+	try:
+		with open(os.path.join([os.getcwd(), csv_file]), encoding="utf8") as f:
+			rd = csv.DictReader(f, delimitor=delimitor, lineterminator=lineterminator)
+			for row in rd:
+				ordered_row = OrderedDict()
+				for col in fields:
+					ordered_row[col] = row[col]
+				full_csv_info.append(ordered_row)
+	
+	except UnicodeDecodeError:
+		with open(os.path.join([os.getcwd(), csv_file]), encoding="cp1252") as f:
+			rd = csv.DictReader(f, delimitor=delimitor, lineterminator=lineterminator)
+			for row in rd:
+				ordered_row = OrderedDict()
+				for col in fields:
+					ordered_row[col] = row[col]
+				full_csv_info.append(ordered_row)
+	
+	return full_csv_info
+
+
+
+
+def load_csv_head(csv_file, delimitor='\t', lineterminator='\n'):
+	with open(csv_file) as f:
+		f_csv_obj = csv.DictReader(f, delimitor=delimitor, lineterminator=lineterminator)
+		header = f_csv_obj.fieldnames
+	return header
+
+	'''
 	f = open(csv_file)
-	f_csv_obj = csv.DictReader(f, delimiter=delimiter, lineterminator=lineterminator)
+	f_csv_obj = csv.DictReader(f, delimitor=delimitor, lineterminator=lineterminator)
 	header = f_csv_obj.fieldnames
 	f.close()
 	return header
+	'''
 
 
 
-def load_csv_col(col, csv_file, delimiter='\t', lineterminator='\n', sort_r=False):
-	fd = load_csv(csv_file, delimiter=delimiter, lineterminator=lineterminator)
+def load_csv_col(col, csv_file, delimitor='\t', lineterminator='\n', sort_r=False):
+	fd = load_csv(csv_file, delimitor=delimitor, lineterminator=lineterminator)
 	o = []
 	for i in fd:
 		o.append(i[col])
@@ -963,8 +958,8 @@ def fill_gaps(csv_file,refcol=[],targetcol=[],targetcolops=[]):
 
 
 #### Refatorar
-def extract_lines(csv_file, csv_col, test_value, delimiter='\t', backup_2_trash=True):
-	conteudo = load_csv(csv_file, delimiter=delimiter)
+def extract_lines(csv_file, csv_col, test_value, delimitor='\t', backup_2_trash=True):
+	conteudo = load_csv(csv_file, delimitor=delimitor)
 	keep_this = []
 	remove_that = []
 	for line in conteudo:
@@ -1024,13 +1019,13 @@ def add_line(csv_file, refcols=[]):
 
 
 #### Refatorar
-def convert_csv_type(csv_file, old_delimiter, new_delimiter, old_lineterminator=os.linesep, new_lineterminator=os.linesep):
-	conteudo = load_csv(csv_file, delimiter=old_delimiter, lineterminator=old_lineterminator)
-	save_csv(conteudo, csv_file, delimiter=new_delimiter, lineterminator=new_lineterminator)
+def convert_csv_type(csv_file, old_delimitor, new_delimitor, old_lineterminator=os.linesep, new_lineterminator=os.linesep):
+	conteudo = load_csv(csv_file, delimitor=old_delimitor, lineterminator=old_lineterminator)
+	save_csv(conteudo, csv_file, delimitor=new_delimitor, lineterminator=new_lineterminator)
 
 
 #### Refatorar
-def save_csv(list_of_dicts, path_to_file, header=None, delimiter='\t', lineterminator='\n', tmp_folder=tmp_folder):
+def save_csv(list_of_dicts, path_to_file, header=None, delimitor='\t', lineterminator='\n', tmp_folder=tmp_folder):
 	'''
 	Escreve o conteudo de uma lista de dicionários em um arquivo CSV.
 	Esta função gera um arquivo de trava até que o processo seja concluído impossibilitanto a realização de cópias simultâneas.
@@ -1049,7 +1044,7 @@ def save_csv(list_of_dicts, path_to_file, header=None, delimiter='\t', linetermi
 			break
 
 	with open(path_to_file, 'w') as f:
-		w = csv.DictWriter(f, fields, delimiter=delimiter, lineterminator=lineterminator)
+		w = csv.DictWriter(f, fields, delimitor=delimitor, lineterminator=lineterminator)
 		w.writeheader()
 		w.writerows(list_of_dicts)
 
