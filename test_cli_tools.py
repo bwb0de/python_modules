@@ -143,7 +143,6 @@ def test_save_text_table_file():
 
 
 def test_read_target_line_on_text_table_file():
-    read_target_line_on_text_table_file
     with open('text_table_file.test', 'w') as f:
         f.write(table5)
     info = read_target_line_on_text_table_file('text_table_file.test', 2, delimitor=':')
@@ -165,17 +164,25 @@ def test_return_bisect_lists_idx():
     l1 = [1,2,3,4,5,6,7,8,9]
     l2 = [1,2,3,4,5,6,7,8]
     
-    idx_left, idx_mid, idx_right = return_bisect_lists_idx(l1, 0, len(l1))
+    idx_left, idx_mid, idx_right = return_bisect_lists_idx(l1, (0, len(l1)))
     assert return_bisect_lists(l1) == (l1[idx_left[0]:idx_left[1]], l1[idx_mid], l1[idx_right[0]:idx_right[1]])
 
-    idx_left, idx_mid, idx_right = return_bisect_lists_idx(l2, 0, len(l2))
+    idx_left, idx_mid, idx_right = return_bisect_lists_idx(l2, (0, len(l2)))
     assert return_bisect_lists(l2) == (l2[idx_left[0]:idx_left[1]], l2[idx_mid], l2[idx_right[0]:idx_right[1]])
 
-
 def test_bisect_search():
-    assert bisect_search(1, [0,1,2,3,4,5,6]) == True
-    assert bisect_search(4, [0,1,2,3,4,5,6]) == True
-    assert bisect_search(334, list(range(1000))) == True
-    assert bisect_search(8, [0,1,2,3,4,5,6]) == False
+    l1 = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I']
+    n = itertools.count()
+    for element in l1:
+        assert bisect_search(element, l1) == True
+    assert bisect_search(8, l1) == False
     assert bisect_search(534, list(range(10000))) == True
 
+def test_bisect_search_idx():
+    l1 = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I']
+    n = itertools.count()
+    for element in l1:
+        assert bisect_search_idx(element, l1, (0,len(l1))) == next(n)
+    assert bisect_search_idx('a', l1, (0,len(l1))) == False
+    assert bisect_search_idx(7, l1, (0,len(l1))) == False
+    assert bisect_search_idx('z', l1, (0,len(l1))) == False
