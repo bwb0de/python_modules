@@ -15,6 +15,37 @@ table3 = ['Masculino:DF:Branco','Feminino:DF:Pardo','Feminino:DF:Branco', 'Femin
 table4 = '{"nome": "Daniel", "idade": 22}\n{"nome": "Helena", "idade": 42}\n{"nome": "Simone", "idade": 30}\n'
 table5 = 'nome:idade\nDaniel:22\nHelena:42\nSimone:30\n'
 
+json_string1='''
+{
+    "info": "Relatório de estudantes",
+    "dados":
+    [
+        {
+            "nome": "Daniel",
+            "idade": 22,
+            "altura": 1.84
+        },
+        {
+            "nome": "Vanessa",
+            "idade": 32,
+            "altura": 1.72
+        },
+        {
+            "nome": "Antônio",
+            "idade": 37,
+            "altura": 1.78
+        }
+    ]
+}
+'''
+
+json_string2='''
+[
+    "Banana",
+    "Maçã",
+    "Pêra"
+]
+'''
 
 def test_create_lockfile():
     create_lockfile('test_lock')
@@ -186,3 +217,22 @@ def test_bisect_search_idx():
     assert bisect_search_idx('a', l1, (0,len(l1))) == False
     assert bisect_search_idx(7, l1, (0,len(l1))) == False
     assert bisect_search_idx('z', l1, (0,len(l1))) == False
+
+
+def test_load_json():
+    with open('text_json_file.test', 'w') as f:
+        f.write(json_string1)
+    json_data = load_json('text_json_file.test')
+    assert isinstance(json_data, dict)
+    assert json_data['dados'][0]['nome'] == 'Daniel'
+    assert isinstance(json_data['dados'][0]['idade'], int)
+    assert isinstance(json_data['dados'][0]['altura'], float)
+    
+    with open('text_json_file.test', 'w') as f:
+        f.write(json_string2)
+    json_data = load_json('text_json_file.test')
+    assert json_data == ['Banana', 'Maçã', 'Pêra']
+    os.remove('text_json_file.test')
+
+
+
