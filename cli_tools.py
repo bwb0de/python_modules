@@ -408,7 +408,7 @@ def read_all_text_table_file(filename, delimitor='\t'):
 		delimitor {string} -- caractere ou substring que delimita as colunas (default: {'\t'})
 	
 	Yields:
-		{string} -- retorna as linhas uma a uma...
+		{generator} -- retorna as linhas uma a uma...
 	"""
 
 	with open(filename) as f:
@@ -466,6 +466,91 @@ def read_target_line_on_text_table_file(filename, line_number, delimitor='\t'):
 		output = dict(zip(fields, output))
 
 	return {'fields': fields, 'data': output}
+
+
+
+def create_column_metainfo_file(text_table_filename, delimitor='\t', col_space=2):
+	"""Cria, na pasta temporária, um arquico com informações da largura das colunas de uma tabela de texto
+	
+	Arguments:
+		text_table_filename {string} -- nome do arquivo de tabela
+	
+	Keyword Arguments:
+		delimitor {str} -- delimitador das colunas (default: {'\t'})
+		col_space {int} -- espaço a ser colocado no final do arquivo (default: {2})
+
+	"""
+	
+	assert isinstance(text_table_filename, str)
+	assert isinstance(delimitor, str)
+	assert isinstance(col_space, int)
+	
+	output_file = tmp_folder + os.sep + 'metainfo_'+text_table_filename
+	text_table_generator = read_all_text_table_file(text_table_filename, delimitor=delimitor)
+	
+	fields = next(text_table_generator)
+	fields_num = len(fields)
+
+	output_col_size = []
+	
+	while fields_num:
+		output_col_size.append(0)
+		fields_num -= 1
+	
+	for line in text_table_generator:
+		col_idx_count = itertools.count()
+		for value in line:
+			col_idx = next(col_idx_count)
+			if len(value)+col_space > output_col_size[col_idx]:
+				output_col_size[col_idx] = len(value)+col_space
+	
+	output_info = dict(zip(fields, output_col_size))
+	save_json(output_info, output_file)
+
+
+
+def print_text_table_file(text_table_filename, count_lines=True, delimitor='\t'):
+	"""Imprime no console as informações de uma tabela no formato texto.
+	
+	Arguments:
+		text_table_filename {string} -- nome do arquivo de tabela
+	
+	Keyword Arguments:
+		count_lines {bool} -- ativa/desativa a contagem linha à linha (default: {True})
+		delimitor {str} -- delimitador de campo, separador das colunas (default: {'\t'})
+	"""
+	
+	text_table_generator = read_all_text_table_file(text_table_filename, delimitor=delimitor)
+
+	fields = next(text_table_generator)
+	line_num = itertools.count(start=1)
+
+	if not os.path.isfile(tmp_folder+os.sep+'metainfo_'+text_table_filename):
+		create_column_metainfo_file(text_table_filename)
+	
+	metainfo_file = 'metainfo_'+text_table_filename
+	metainfo = load_json(metainfo_file, file_folder=tmp_folder)
+	
+
+	for table_line in text_table_generator:
+		if count_lines: 
+			line_to_print = str(next(line_num)).zfill(3) + '  '
+		else: 
+			line_to_print = ''
+			next(line_num)
+		
+		col_idx_count = itertools.count()
+		cells_values = ""
+		for cell in table_line:
+			col_idx = next(col_idx_count)
+			cells_values += cell.ljust(metainfo[fields[col_idx]])
+			
+		print(line_to_print+cells_values)
+	
+	line_num = next(line_num) - 1
+	if not count_lines:
+		print('Total:', line_num)
+
 
 
 def save_text_table_file(filename, new_line, delimitor='\t', constrain_cols=True):
@@ -696,41 +781,7 @@ def make_random_float_list(num_of_elements, min_val=0, max_val=10000):
 
 
 
-#Subir esta função e refatorá-la...
-def listagem_cli2(generator, cols):
-	visual_count = itertools.count(start=1)
-	for linha in generator:
-		next(visual_count)
-		visual_nfo = ""
-		w = 0
-		li = ""
-		linha_sem_quebra = True
-		for col in cols:
-			if linha.get(col[0]):
-				li += linha[col[0]].ljust(col[1])
-				if linha[col[0]].find(';') == -1:
-					w += col[1]
-				else:
-					linha_sem_quebra = False
-					lii = li.split(';')
-					if len(lii) > 1:
-						pri = True
-						for i in lii:
-							if pri == True:
-								visual_nfo += i + os.linesep
-								pri = False
-							else:
-								visual_nfo += "".ljust(w-1) + i + os.linesep
-								print(visual_nfo)
-			else:
-				li += "".ljust(col[1])
 
-		
-		if linha_sem_quebra == True:
-			visual_nfo += li 
-			print(visual_nfo)
-	
-	print("Total: {}".format(visual_count))
 
 
 
