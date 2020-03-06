@@ -398,8 +398,6 @@ def read_target_line_on_text_json_file(filename, line_number):
 
 
 
-
-
 def read_all_text_table_file(filename, delimitor='\t'):
 	"""Ler todas as linhas de uma tabela em formato texto
 	
@@ -525,6 +523,8 @@ def return_bisect_lists(input_list):
 
 	return left_side, middle_element, right_side
 
+
+
 def bisect_search(search_value, input_list):
 	"""Realiza pesquisa binária na lista de entrada e retorna True se o elemento existir
 	
@@ -628,33 +628,8 @@ def bisect_search_idx(search_value, input_list, slice_ref, current_mid_idx=0):
 			return False
 
 
-
-#Em processo de implementação
-def save_text_db_file(novos_dados, path_to_file, tmp_folder=tmp_folder):
-	lockf = lockfile_name(path_to_file)
-	initfolder = os.getcwd()
-	nfo = path_to_file.split('/')
-	fname = nfo[-1]
-	path = path_to_file.replace(fname, '')
-
-	while True:
-		if os.path.isfile(tmp_folder+os.sep+lockf):
-			time.sleep(0.1)
-		else:
-			create_lockfile(lockf)
-			break
-
-	os.chdir(path.replace('/', os.sep))
-	with open(path_to_file, 'w') as f:
-		f.write(novos_dados)
-
-	os.chdir(initfolder)
-	remove_lockfile(lockf)
-
-
-
-def load_json(path_to_file):
-	with open(path_to_file) as f:
+def load_json(filename):
+	with open(filename) as f:
 		data = f.read()
 		return json.loads(data)
 
