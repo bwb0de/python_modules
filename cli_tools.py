@@ -628,8 +628,18 @@ def bisect_search_idx(search_value, input_list, slice_ref, current_mid_idx=0):
 			return False
 
 
-def load_json(filename):
-	with open(filename) as f:
+def load_json(filename, file_folder='.'):
+	"""Carrega um arquivo JSON do disco rígido na memória
+	
+	Arguments:
+		filename {string} -- nome do arquivo a ser carregado
+		file_folder {string} -- local no sistema de arquivos onde o arquivo se encontra
+	
+	Returns:
+		{pyObject} -- retorna um objeto python conforme a estrutura do arquivo JSON
+	"""
+
+	with open(file_folder+os.sep+filename) as f:
 		data = f.read()
 		return json.loads(data)
 
