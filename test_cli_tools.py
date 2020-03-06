@@ -152,3 +152,10 @@ def test_read_target_line_on_text_table_file():
     assert info['data']['idade'] == "42" 
     os.remove('text_table_file.test')
 
+
+def test_return_bisect_lists()
+    assert return_bisect_lists([1,2,3,4,5,6,7,8,9]) == [1,2,3,4], 5, [6,7,8,9]
+    assert return_bisect_lists([1,2,3,4,5,6,7,8]) == [1,2,3,4], 5, [6,7,8]
+    with raises(AssertionError):
+        return_bisect_lists([1,2])
+
