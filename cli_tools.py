@@ -1,25 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-#
-#
-#  Copyright 2019 Daniel Cruz <bwb0de@bwb0dePC>
-#  Version 0.1
-#
-#  This program is free software; you can redistribute it and/or modify
-#  it under the terms of the GNU General Public License as published by
-#  the Free Software Foundation; either version 2 of the License, or
-#  (at your option) any later version.
-#
-#  This program is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU General Public License for more details.
-#
-#  You should have received a copy of the GNU General Public License
-#  along with this program; if not, write to the Free Software
-#  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
-#  MA 02110-1301, USA.
-#
+# license: AGPL-3.0 
 #
 
 
@@ -85,22 +66,22 @@ def list_folder(folder):
     return os.listdir(os.getcwd()+os.sep+folder)
 
 
-def list_col_responses(iterator, col_num=0, delimitor='\t'):
+def list_col_responses(iterator, col_num=0, delimiter='\t'):
 	"""Retorna os valores de uma tabela, linha à linha, para a coluna selecionada
 	
 	Arguments:
-		iterator {table} -- é uma tabela NxN ou uma lista ou tupla com strings e um caractere delimitor
+		iterator {table} -- é uma tabela NxN ou uma lista ou tupla com strings e um caractere delimiter
 	
 	Keyword Arguments:
 		col_num {int} -- o numero correspondente à coluna desejada (default: {0})
-		delimitor {str} -- o caractere/substring que demarca a separação das colunas (default: {'\t'})
+		delimiter {str} -- o caractere/substring que demarca a separação das colunas (default: {'\t'})
 	
 	Yields:
 		{string} -- each cell will be returned separatedly
 	"""
 
 	for item in iterator:
-		yield item.split(delimitor)[col_num]
+		yield item.split(delimiter)[col_num]
 
 
 def concat_dict_values(dictionary, key, value):
@@ -133,15 +114,15 @@ def concat_dict_values(dictionary, key, value):
 	return dictionary
 
 
-def dict_from_table(iterator, col_num=0, delimitor='\t'):
+def dict_from_table(iterator, col_num=0, delimiter='\t'):
 	"""Converte uma tabela em um dicionário utilizando os valores da coluna selecionada como chaves
 	
 	Arguments:
-		iterator {table} -- é uma tabela NxN ou uma lista ou tupla com strings e um caractere delimitor
+		iterator {table} -- é uma tabela NxN ou uma lista ou tupla com strings e um caractere delimiter
 	
 	Keyword Arguments:
 		col_num {int} -- número da coluna de referência (default: {0})
-		delimitor {str} -- o caractere/substring que demarca a separação das colunas (default: {'\t'})
+		delimiter {str} -- o caractere/substring que demarca a separação das colunas (default: {'\t'})
 	
 	Returns:
 		{dict} -- retorna um OrderedDict
@@ -153,20 +134,20 @@ def dict_from_table(iterator, col_num=0, delimitor='\t'):
 	assert isinstance(iterator, (tuple, list)), "Iterador não suportado, utilizar 'tuple' ou 'list' como argumento."
 	assert isinstance(iterator[0], (list, str)), "As linhas da tabela devem ser to tipo 'list'."
 
-	use_delimitor = check_table_type(iterator)
+	use_delimiter = check_table_type(iterator)
 
 	output = OrderedDict()
 	for item in iterator:
-		if use_delimitor:
-			num_of_cols = item.count(delimitor)+1
+		if use_delimiter:
+			num_of_cols = item.count(delimiter)+1
 		else:
 			num_of_cols = len(item)
 		
 		indexes = list(range(0,num_of_cols))
 		indexes.remove(col_num)
 
-		if use_delimitor:
-			tmp_list = item.split(delimitor)
+		if use_delimiter:
+			tmp_list = item.split(delimiter)
 		else:
 			tmp_list = item
 
@@ -205,15 +186,15 @@ def create_col_index(iterator):
 	return output
 
 
-def create_line_index(iterator, col_num_list=[0], delimitor='\t'):
+def create_line_index(iterator, col_num_list=[0], delimiter='\t'):
 	"""Cria um dicionário a partir de uma tabela em que os valores das colunas selecionadas apontam para o número da linha da tabela original
 	
 	Arguments:
-		iterator {table} -- é uma tabela NxN ou uma lista ou tupla com strings e um caractere delimitor
+		iterator {table} -- é uma tabela NxN ou uma lista ou tupla com strings e um caractere delimiter
 	
 	Keyword Arguments:
 		col_num_list {list} -- lista com o numero das colunas que serão indexadas (default: {[0]})
-		delimitor {str} -- o caractere/substring que demarca a separação das colunas (default: {'\t'})
+		delimiter {str} -- o caractere/substring que demarca a separação das colunas (default: {'\t'})
 	
 	Returns:
 		{dict} -- retorna um dicionário com referências para as linhas da tabela original
@@ -223,14 +204,14 @@ def create_line_index(iterator, col_num_list=[0], delimitor='\t'):
 
 	output = dict()
 	
-	use_delimitor = check_table_type(iterator)
+	use_delimiter = check_table_type(iterator)
 	
 	for col in col_num_list:
 		idx = itertools.count()
 		for line in iterator:
 			n = next(idx)
-			if use_delimitor:
-				line = line.split(delimitor)
+			if use_delimiter:
+				line = line.split(delimiter)
 			if output.get(line[col]):
 				output = concat_dict_values(output, line[col], n)
 			else:
@@ -279,7 +260,7 @@ def check_table_type(iterator):
 		
 
 
-def ask_for_col_labels(num_of_cols, table_first_line, use_delimitor=True, delimitor='\t'):
+def ask_for_col_labels(num_of_cols, table_first_line, use_delimiter=True, delimiter='\t'):
 	"""Retorna um dicionário com os nomes das colunas e indexes de referência
 	
 	Arguments:
@@ -287,8 +268,8 @@ def ask_for_col_labels(num_of_cols, table_first_line, use_delimitor=True, delimi
 		table_first_line {table} -- matrix 1xN ou string com valores separados pelo delimitador
 	
 	Keyword Arguments:
-		use_delimitor {bool} -- utiliza o delimitador no caso da amostra de dados ser uma string com delimitador (default: {True})
-		delimitor {str} -- o caractere/substring que demarca a separação das colunas (default: {'\t'})
+		use_delimiter {bool} -- utiliza o delimitador no caso da amostra de dados ser uma string com delimitador (default: {True})
+		delimiter {str} -- o caractere/substring que demarca a separação das colunas (default: {'\t'})
 
 	Returns:
 		{list} -- retorna uma lista
@@ -300,7 +281,7 @@ def ask_for_col_labels(num_of_cols, table_first_line, use_delimitor=True, delimi
 	output = []
 	n = itertools.count() 
 	
-	if use_delimitor: table_first_line = table_first_line.split(delimitor)
+	if use_delimiter: table_first_line = table_first_line.split(delimiter)
 
 	while True:
 		idx = next(n)
@@ -312,7 +293,7 @@ def ask_for_col_labels(num_of_cols, table_first_line, use_delimitor=True, delimi
 	return output
 
 
-def string_table_to_int_matrix(iterator, reference_data=False, delimitor='\t'):
+def string_table_to_int_matrix(iterator, reference_data=False, delimiter='\t'):
 	"""Converte uma tabela com strings em uma matriz numérica a partir de uma referência prévia ou a partir da atribuição arbitrária de números aos valores dos campos textuais na ordem em que estes são apresentados
 	
 	Returns:
@@ -323,10 +304,10 @@ def string_table_to_int_matrix(iterator, reference_data=False, delimitor='\t'):
 
 	numeric_matrix = []
 
-	use_delimitor = check_table_type(iterator)
+	use_delimiter = check_table_type(iterator)
 	
-	if use_delimitor:
-		num_of_cols = len(iterator[0].split(delimitor))
+	if use_delimiter:
+		num_of_cols = len(iterator[0].split(delimiter))
 	else:
 		num_of_cols = len(iterator[0])
 
@@ -340,8 +321,8 @@ def string_table_to_int_matrix(iterator, reference_data=False, delimitor='\t'):
 		reference_list.append({})
 
 	for line in iterator:
-		if use_delimitor:
-			line = line.split(delimitor)
+		if use_delimiter:
+			line = line.split(delimiter)
 		
 		n = itertools.count()
 		numeric_matrix_line = []
@@ -398,14 +379,14 @@ def read_target_line_on_text_json_file(filename, line_number):
 
 
 
-def read_all_text_table_file(filename, delimitor='\t'):
+def read_all_text_table_file(filename, delimiter='\t'):
 	"""Ler todas as linhas de uma tabela em formato texto
 	
 	Arguments:
 		filename {string} -- nome do arquivo da tabela
 	
 	Keyword Arguments:
-		delimitor {string} -- caractere ou substring que delimita as colunas (default: {'\t'})
+		delimiter {string} -- caractere ou substring que delimita as colunas (default: {'\t'})
 	
 	Yields:
 		{generator} -- retorna as linhas uma a uma...
@@ -413,33 +394,33 @@ def read_all_text_table_file(filename, delimitor='\t'):
 
 	with open(filename) as f:
 		for line in f:
-			yield split_and_strip(line, delimitor=delimitor)
+			yield split_and_strip(line, delimiter=delimiter)
 
 
-def split_and_strip(text, delimitor='\t'):
+def split_and_strip(text, delimiter='\t'):
 	"""Separa uma string com base no delimitador e retira espaços em branco no início e final dos elementos
 	
 	Arguments:
 		texto {string} -- texto ou string de entrada
 	
 	Keyword Arguments:
-		delimitor {string} -- caractere ou substring que delimita os campos (default: {'\t'})
+		delimiter {string} -- caractere ou substring que delimita os campos (default: {'\t'})
 	
 	Returns:
 		{list} -- retorna uma lista com os elementos
 	"""
 
 	assert isinstance(text, str)
-	assert isinstance(delimitor, str)
+	assert isinstance(delimiter, str)
 	
-	output = text.split(delimitor)
+	output = text.split(delimiter)
 	idx = itertools.count()
 	for i in output: output[next(idx)] = i.strip()
 	return output
 
 
 
-def read_target_line_on_text_table_file(filename, line_number, delimitor='\t'):
+def read_target_line_on_text_table_file(filename, line_number, delimiter='\t'):
 	"""Lê uma linha alvo de uma tabela em formato texto e retorna seu conteúdo, bem como o rótulo dos campos (primeira linha)
 	
 	Arguments:
@@ -447,48 +428,48 @@ def read_target_line_on_text_table_file(filename, line_number, delimitor='\t'):
 		line_number {int} -- linha alvo
 	
 	Keyword Arguments:
-		delimitor {str} -- caractere ou substring que delimita os campos (default: {'\t'})
+		delimiter {str} -- caractere ou substring que delimita os campos (default: {'\t'})
 	
 	Returns:
 		{dict} -- retorna dicionário com nome/ordem dos campos e dados da linha selecionada
 	"""
 	assert isinstance(filename, str)
 	assert isinstance(line_number, int)
-	assert isinstance(delimitor, str)
+	assert isinstance(delimiter, str)
 
 	with open(filename) as f:
 		fields = itertools.islice(f, 0, 1)
-		fields = split_and_strip(next(fields), delimitor=delimitor) 
+		fields = split_and_strip(next(fields), delimiter=delimiter) 
 	
 	with open(filename) as f:
 		output = itertools.islice(f, line_number, line_number+1)
-		output = split_and_strip(next(output), delimitor=delimitor)
+		output = split_and_strip(next(output), delimiter=delimiter)
 		output = dict(zip(fields, output))
 
 	return {'fields': fields, 'data': output}
 
 
 
-def create_column_metainfo_file(text_table_filename, text_table_file_folder=os.curdir,  delimitor='\t', col_space=2):
+def create_column_metainfo_file(text_table_filename, text_table_file_folder=os.curdir,  delimiter='\t', col_space=2):
 	"""Cria, na pasta temporária, um arquico com informações da largura das colunas de uma tabela de texto
 	
 	Arguments:
 		text_table_filename {string} -- nome do arquivo de tabela
 	
 	Keyword Arguments:
-		delimitor {str} -- delimitador das colunas (default: {'\t'})
+		delimiter {str} -- delimitador das colunas (default: {'\t'})
 		col_space {int} -- espaço a ser colocado no final do arquivo (default: {2})
 
 	"""
 	
 	assert isinstance(text_table_filename, str)
-	assert isinstance(delimitor, str)
+	assert isinstance(delimiter, str)
 	assert isinstance(col_space, int)
 	
 	output_file = 'metainfo_'+text_table_filename
 	#output_file = tmp_folder + os.sep + 'metainfo_'+text_table_filename
 	
-	text_table_generator = read_all_text_table_file(text_table_filename, delimitor=delimitor)
+	text_table_generator = read_all_text_table_file(text_table_filename, delimiter=delimiter)
 	
 	fields = next(text_table_generator)
 	fields_num = len(fields)
@@ -511,7 +492,7 @@ def create_column_metainfo_file(text_table_filename, text_table_file_folder=os.c
 
 
 
-def print_text_table_file(text_table_filename, count_lines=True, delimitor='\t'):
+def print_text_table_file(text_table_filename, count_lines=True, delimiter='\t'):
 	"""Imprime no console as informações de uma tabela no formato texto.
 	
 	Arguments:
@@ -519,10 +500,10 @@ def print_text_table_file(text_table_filename, count_lines=True, delimitor='\t')
 	
 	Keyword Arguments:
 		count_lines {bool} -- ativa/desativa a contagem linha à linha (default: {True})
-		delimitor {str} -- delimitador de campo, separador das colunas (default: {'\t'})
+		delimiter {str} -- delimitador de campo, separador das colunas (default: {'\t'})
 	"""
 	
-	text_table_generator = read_all_text_table_file(text_table_filename, delimitor=delimitor)
+	text_table_generator = read_all_text_table_file(text_table_filename, delimiter=delimiter)
 
 	fields = next(text_table_generator)
 	line_num = itertools.count(start=1)
@@ -555,7 +536,7 @@ def print_text_table_file(text_table_filename, count_lines=True, delimitor='\t')
 
 
 
-def save_text_table_file(filename, new_line, delimitor='\t', constrain_cols=True):
+def save_text_table_file(filename, new_line, delimiter='\t', constrain_cols=True):
 	"""Adiciona linha no final de uma tabela em texto
 	
 	Arguments:
@@ -563,32 +544,32 @@ def save_text_table_file(filename, new_line, delimitor='\t', constrain_cols=True
 		new_line {dict, tuple, list} -- novo conteúdo a ser inserido do arquivo
 	
 	Keyword Arguments:
-		delimitor {str} -- caractere ou substring que delimita os campos (default: {'\t'})
+		delimiter {str} -- caractere ou substring que delimita os campos (default: {'\t'})
 		constrain_cols {bool} -- ativa/desativa validação de colunas e posição (default: {True})
 	"""
 
 	assert isinstance(filename, str)
-	assert isinstance(delimitor, str)
+	assert isinstance(delimiter, str)
 	assert isinstance(constrain_cols, bool)
 
 	if constrain_cols:
 		assert isinstance(new_line, dict), "Para verificação das colunas é necessário passar os valores em um 'dict'"
 		with open(filename) as f:
-			fields = split_and_strip(next(f), delimitor=delimitor)
+			fields = split_and_strip(next(f), delimiter=delimiter)
 		assert len(fields) == len(new_line), "A quantidade de colunas no dicionário não corresponde à do arquivo"
 		for key in new_line:
 			assert key in fields, "O campo '{}' não existe no arquivo '{}'".format(key, filename)
 
 	else:
 		assert isinstance(new_line, (tuple, list)), "O argumento 'new_line' deve ser uma 'list' ou 'tuple'"
-		new_line = delimitor.join(new_line) + os.linesep
+		new_line = delimiter.join(new_line) + os.linesep
 	
 	with open(filename, 'a') as f:
 		if constrain_cols:
 			new_line_ordered_info = []
 			for field in fields:
 				new_line_ordered_info.append(new_line[field])
-			new_line = delimitor.join(new_line_ordered_info) + os.linesep
+			new_line = delimiter.join(new_line_ordered_info) + os.linesep
 			f.write(new_line)
 		else:
 			f.write(new_line)
@@ -812,51 +793,63 @@ def make_random_float_list(num_of_elements, min_val=0, max_val=10000):
 
 
 
-#
-# Em processo de implementação
-#
-# Tem de ser implementado o método isslice de itertools
-#
+def load_csv(filename, file_folder=os.curdir, delimiter='\t', lineterminator='\n'):
+	"""Função de leitura de arquivos CSV, retorna um gerador que apresenta as informações linha à linha.
+	
+	Arguments:
+		filename {string} -- nome do arquivo CSV
+	
+	Keyword Arguments:
+		delimiter {char} -- caractere delimitador (default: {'\t'})
+		lineterminator {char} -- caractere de final de linha (default: {'\n'})
+	
+	Yields:
+		{OrderedDict} -- as linhas são retornadas como dicionário ordenado
+	"""
 
-def load_big_csv(csv_file, delimitor='\t', lineterminator='\n'):
-	'''
-	Acessa o conteúdo do arquivo CSV e o armazena na memória como um list_of_dicts.
-	'''
-
-	fields = load_csv_head(csv_file, delimitor=delimitor, lineterminator=lineterminator)
+	fields = load_csv_head(filename, file_folder=file_folder, delimiter=delimiter, lineterminator=lineterminator)
 
 	try:
-		with open(os.path.join(os.getcwd(), csv_file), encoding="utf8") as csv_fileobj:
-			rd = csv.DictReader(csv_fileobj, delimitor=delimitor, lineterminator=lineterminator)
+		with open(os.path.join(file_folder, filename), encoding="utf8") as f:
+			rd = csv.DictReader(f, delimiter=delimiter, lineterminator=lineterminator)
 			for row in rd:
 				ordered_row = OrderedDict()
 				for col in fields:
 					ordered_row[col] = row[col]
-				yield ordered_row[col]
-	except:
-		with open(os.path.join(os.getcwd(), csv_file), encoding="cp1252") as csv_fileobj:
-			rd = csv.DictReader(csv_fileobj, delimitor=delimitor, lineterminator=lineterminator)
+				yield ordered_row
+	except UnicodeDecodeError:
+		with open(os.path.join(file_folder, filename), encoding="cp1252") as f:
+			rd = csv.DictReader(f, delimiter=delimiter, lineterminator=lineterminator)
 			for row in rd:
 				ordered_row = OrderedDict()
 				for col in fields:
 					ordered_row[col] = row[col]
-				yield ordered_row[col]
+				yield ordered_row
 
 
 
-
-def load_csv(csv_file, delimitor='\t', lineterminator='\n'):
-	'''
-	Acessa o conteúdo do arquivo CSV e o armazena na memória como um list_of_dicts.
-	'''
+def load_full_csv(filename, file_folder=os.curdir, delimiter='\t', lineterminator='\n'):
+	"""Função de leitura de arquivos CSV, retorna todo o conteúdo do arquivo de uma vez.
 	
+	Arguments:
+		filename {string} -- nome do arquivo CSV
+	
+	Keyword Arguments:
+		file_folder {string} -- local onde o arquivo se encontra (default: {os.curdir})
+		delimiter {char} -- caractere delimitador de campo (default: {'\t'})
+		lineterminator {char} -- caractere delimitador de linha (default: {'\n'})
+	
+	Returns:
+		{list} -- returna uma lista de dicionários ordenados
+	"""
+
 	full_csv_info = []
 	
-	fields = load_csv_head(csv_file, delimitor=delimitor, lineterminator=lineterminator)
+	fields = load_csv_head(filename, file_folder=file_folder, delimiter=delimiter, lineterminator=lineterminator)
 	
 	try:
-		with open(os.path.join([os.getcwd(), csv_file]), encoding="utf8") as f:
-			rd = csv.DictReader(f, delimitor=delimitor, lineterminator=lineterminator)
+		with open(os.path.join(file_folder, filename), encoding="utf8") as f:
+			rd = csv.DictReader(f, delimiter=delimiter, lineterminator=lineterminator)
 			for row in rd:
 				ordered_row = OrderedDict()
 				for col in fields:
@@ -864,8 +857,8 @@ def load_csv(csv_file, delimitor='\t', lineterminator='\n'):
 				full_csv_info.append(ordered_row)
 	
 	except UnicodeDecodeError:
-		with open(os.path.join([os.getcwd(), csv_file]), encoding="cp1252") as f:
-			rd = csv.DictReader(f, delimitor=delimitor, lineterminator=lineterminator)
+		with open(os.path.join(file_folder, filename), encoding="cp1252") as f:
+			rd = csv.DictReader(f, delimiter=delimiter, lineterminator=lineterminator)
 			for row in rd:
 				ordered_row = OrderedDict()
 				for col in fields:
@@ -877,37 +870,119 @@ def load_csv(csv_file, delimitor='\t', lineterminator='\n'):
 
 
 
-def load_csv_head(csv_file, delimitor='\t', lineterminator='\n'):
-	with open(csv_file) as f:
-		f_csv_obj = csv.DictReader(f, delimitor=delimitor, lineterminator=lineterminator)
+def load_csv_head(filename, file_folder=os.curdir, delimiter='\t', lineterminator='\n'):
+	"""Carrega as informações de cabeçalho (nomes das colunas) de um arquivo CSV
+	
+	Arguments:
+		filename {string} -- nome do arquivo CSV
+	
+	Keyword Arguments:
+		file_folder {string} -- local onde o arquivo está (default: {os.curdir})
+		delimiter {char} -- caractere delimitador de campo (default: {'\t'})
+		lineterminator {char} -- caractere de fim de linha (default: {'\n'})
+	
+	Returns:
+		{list} -- lista contendo os nomes das colunas
+	"""
+
+	with open(os.path.join(file_folder, filename)) as f:
+		f_csv_obj = csv.DictReader(f, delimiter=delimiter, lineterminator=lineterminator)
 		header = f_csv_obj.fieldnames
 	return header
 
-	'''
-	f = open(csv_file)
-	f_csv_obj = csv.DictReader(f, delimitor=delimitor, lineterminator=lineterminator)
-	header = f_csv_obj.fieldnames
-	f.close()
-	return header
-	'''
+
+
+def load_csv_cols(filename, selected_cols=[], file_folder=os.curdir, delimiter='\t', lineterminator='\n', sort_by=False, reverse_sort=False, implict_convert=True):
+	"""Retorna colunas selecionadas de um arquivo CSV
+	
+	Arguments:
+		filename {string} -- nome do arquivo CSV
+	
+	Keyword Arguments:
+		selected_cols {list} -- lista de colunas selecionadas, se vazio a linha de comando solicitará seleção (default: {[]})
+		file_folder {string} -- local onde o arquivo CSV está (default: {os.curdir})
+		delimiter {char} -- caractere de delimitação das colunas (default: {'\t'})
+		lineterminator {char} -- caractere de fim de linha (default: {'\n'})
+		sort_by {string} -- colona que servirá de referencia para ordenação (default: {False})
+		reverse_sort {bool} -- se True, a ordem será invertida (default: {False})
+		implict_convert {bool} -- tenta converter informações conforme o tipo (default: {True})
+	
+	Returns:
+		{table} -- retorna uma matrix NxN com os valores do arquivo CSV
+
+	Observations:
+		Para ordenar a lista a partir de um campo numérico, será necessário manter o argumento 'implict_convert' como True.
+	"""
+
+	fields = load_csv_head(filename, file_folder=file_folder, delimiter=delimiter, lineterminator=lineterminator)
+	lines = load_csv(filename, file_folder=file_folder, delimiter=delimiter, lineterminator=lineterminator)
+
+	if not selected_cols:
+		selected_cols = pick_options(fields, input_label="Selecione as colunas desejadas", max_selection=len(fields))
+	
+
+	output = []
+	for line in lines:
+		output_line = []
+		for col in selected_cols:
+			if implict_convert: output_line.append(try_implict_convert(line[col]))
+			else: output_line.append(line[col])
+		output.append(output_line)
+
+	if not sort_by:
+		return output
+
+	else:
+		col_idx = selected_cols.index(sort_by)
+		print(col_idx)
+		sort_by_col = lambda l: l[col_idx]
+		output.sort(key=sort_by_col)
+		if reverse_sort:
+			output.reverse()
+		return output
 
 
 
-def load_csv_col(col, csv_file, delimitor='\t', lineterminator='\n', sort_r=False):
-	fd = load_csv(csv_file, delimitor=delimitor, lineterminator=lineterminator)
-	o = []
-	for i in fd:
-		o.append(i[col])
-	if sort_r == True:
-		o.sort()
-	return o
+def try_implict_convert(value):
+	"""Tenta converter as informações das colunas de um arquivo CSV conforme a máscara/pattern identificado
+	
+	Arguments:
+		value {string} -- valor em formato string a ser convertido
+	
+	Returns:
+		{int|float|string} -- tenta retornar 'int' ou 'float', se não for possível devolve o valor de entrada.
+	"""
+
+	if re.search(r'\d*,\d*', value):
+		try:
+			value = value.replace(',','.')
+			value = float(value)
+		except: pass
+		return value
+
+	elif re.search(r'\d*.\d*', value):
+		try:
+			value = float(value)
+		except: pass
+		return value
+
+
+	elif re.search(r'\d*', value):
+		try: value = int(value)
+		except: pass
+		return value
+
+	else:
+		return value
+		
+
 
 
 
 #### Refatorar
-def fill_gaps(csv_file,refcol=[],targetcol=[],targetcolops=[]):
-	conteudo = load_csv(csv_file)
-	cols = load_csv_head(csv_file)
+def fill_gaps(filename,refcol=[],targetcol=[],targetcolops=[]):
+	conteudo = load_csv(filename)
+	cols = load_csv_head(filename)
 	
 	print_refcol = True
 	keep_working = True
@@ -943,7 +1018,7 @@ def fill_gaps(csv_file,refcol=[],targetcol=[],targetcolops=[]):
 			while True:
 				op = input("Gravar alterações e continuar? s/n : ")
 				if (op == 's') or (op == 'S'):
-					save_csv(conteudo,csv_file)
+					save_csv(conteudo,filename)
 					break
 				elif (op == 'n') or (op == 'N'):
 					keep_working = False
@@ -958,8 +1033,8 @@ def fill_gaps(csv_file,refcol=[],targetcol=[],targetcolops=[]):
 
 
 #### Refatorar
-def extract_lines(csv_file, csv_col, test_value, delimitor='\t', backup_2_trash=True):
-	conteudo = load_csv(csv_file, delimitor=delimitor)
+def extract_lines(filename, csv_col, test_value, delimiter='\t', backup_2_trash=True):
+	conteudo = load_csv(filename, delimiter=delimiter)
 	keep_this = []
 	remove_that = []
 	for line in conteudo:
@@ -969,18 +1044,18 @@ def extract_lines(csv_file, csv_col, test_value, delimitor='\t', backup_2_trash=
 			keep_this.append(line)
 	op = input("Deseja remover as {} linhas encontradas na tabela? (s/n)".format(len(remove_that)))
 	if op == "s" or op == "S":
-		save_csv(keep_this, csv_file)
+		save_csv(keep_this, filename)
 		if backup_2_trash == True:
-			new_csv_file = time.ctime().replace(' ','_') + "_rmLines_from_" + csv_file
-			save_csv(remove_that, new_csv_file)
+			new_filename = time.ctime().replace(' ','_') + "_rmLines_from_" + filename
+			save_csv(remove_that, new_filename)
 
 
 
 #### Refatorar
-def copy_col(csv_file, source_col, destination_col):
+def copy_col(filename, source_col, destination_col):
 	"Copia o conteúdo de uma coluna alvo para uma coluna de destino se a célula do destino ainda não estiver preechida"
-	conteudo = load_csv(csv_file)
-	cols = load_csv_head(csv_file)
+	conteudo = load_csv(filename)
+	cols = load_csv_head(filename)
 	change_info = False
 	if destination_col in cols:
 		for line in conteudo:
@@ -996,36 +1071,36 @@ def copy_col(csv_file, source_col, destination_col):
 	
 	if change_info == True:
 		print("Cópia efetuada...")
-		save_csv(conteudo, csv_file)
+		save_csv(conteudo, filename)
 	else:
 		print("Não há o que alterar...")
 
 
 
 #### Refatorar
-def add_line(csv_file, refcols=[]):
-	conteudo = load_csv(csv_file)
-	cols = load_csv_head(csv_file)
+def add_line(filename, refcols=[]):
+	conteudo = load_full_csv(filename)
+	cols = load_csv_head(filename)
 	nova_linha = OrderedDict()
 	for c in cols:
 		v = input(c+": ")
 		nova_linha[c] = v
 		
 	conteudo.append(nova_linha)
-	save_csv(conteudo, csv_file)
+	save_csv(conteudo, filename)
 	v = input("Adicionar outro? (s/n) ")
 	if v == "s" or v == "S":
-		add_line(csv_file)
+		add_line(filename)
 
 
 #### Refatorar
-def convert_csv_type(csv_file, old_delimitor, new_delimitor, old_lineterminator=os.linesep, new_lineterminator=os.linesep):
-	conteudo = load_csv(csv_file, delimitor=old_delimitor, lineterminator=old_lineterminator)
-	save_csv(conteudo, csv_file, delimitor=new_delimitor, lineterminator=new_lineterminator)
+def convert_csv_type(filename, old_delimiter, new_delimiter, old_lineterminator=os.linesep, new_lineterminator=os.linesep):
+	conteudo = load_csv(filename, delimiter=old_delimiter, lineterminator=old_lineterminator)
+	save_csv(conteudo, filename, delimiter=new_delimiter, lineterminator=new_lineterminator)
 
 
 #### Refatorar
-def save_csv(list_of_dicts, path_to_file, header=None, delimitor='\t', lineterminator='\n', tmp_folder=tmp_folder):
+def save_csv(list_of_dicts, path_to_file, header=None, delimiter='\t', lineterminator='\n', tmp_folder=tmp_folder):
 	'''
 	Escreve o conteudo de uma lista de dicionários em um arquivo CSV.
 	Esta função gera um arquivo de trava até que o processo seja concluído impossibilitanto a realização de cópias simultâneas.
@@ -1044,7 +1119,7 @@ def save_csv(list_of_dicts, path_to_file, header=None, delimitor='\t', linetermi
 			break
 
 	with open(path_to_file, 'w') as f:
-		w = csv.DictWriter(f, fields, delimitor=delimitor, lineterminator=lineterminator)
+		w = csv.DictWriter(f, fields, delimiter=delimiter, lineterminator=lineterminator)
 		w.writeheader()
 		w.writerows(list_of_dicts)
 
@@ -1949,7 +2024,7 @@ def convert_items_to_int(original_list):
 	return [int(n) for n in original_list]
 
 
-def read_input(input_label=False, default=False, dada_type='string', data_pattern=False, prompt="$: ", list_item_delimitor=',', waring_msg="Resposta inválida ou em formato inadequado...", clear_screen=False, label_color=branco, prompt_color=branco, warning_color=vermelho, callback=False, break_line=True):
+def read_input(input_label=False, default=False, dada_type='string', data_pattern=False, prompt="$: ", list_item_delimiter=',', waring_msg="Resposta inválida ou em formato inadequado...", clear_screen=False, label_color=branco, prompt_color=branco, warning_color=vermelho, callback=False, break_line=True):
 	if clear_screen:
 		limpar_tela()
 		
@@ -1983,7 +2058,7 @@ def read_input(input_label=False, default=False, dada_type='string', data_patter
 
 			elif dada_type == 'list':
 				try: 
-					response = split_and_strip(response, list_item_delimitor)
+					response = split_and_strip(response, list_item_delimiter)
 					all_ok = True
 				
 				except ValueError: print(warning_color(waring_msg))
