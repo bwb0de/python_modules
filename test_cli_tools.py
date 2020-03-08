@@ -6,8 +6,10 @@ import os
 from cli_tools import *
 from pytest import fixture, raises
 
-
 dictionary = {'Daniel': 22, 'Lara': [33, 88, 56], 'Joana': [[40, 67, 86], [13, 15]]}
+
+
+test_data_folder = ".test_data/"
 
 table1 = ['Daniel:36:dan@gmail.com','Mara:22:mara@outlook.com','Silvia:22:slv@gmail.com']
 table2 = [('Daniel', 36, 'dan@gmail.com'), ('Mara', 22, 'mara@outlook.com'), ('Silvia', 22, 'slv@gmail.com')]
@@ -69,9 +71,9 @@ def test_lockfile_name():
 
 
 def test_list_col_responses():
-    assert next(list_col_responses(table1, 1, delimitor=':')) == '36'
-    assert list(list_col_responses(table1, 1, delimitor=':'))[-1] == '22'
-    assert list(list_col_responses(table1, 2, delimitor=':'))[-1] == 'slv@gmail.com'
+    assert next(list_col_responses(table1, 1, delimiter=':')) == '36'
+    assert list(list_col_responses(table1, 1, delimiter=':'))[-1] == '22'
+    assert list(list_col_responses(table1, 2, delimiter=':'))[-1] == 'slv@gmail.com'
 
 
 def test_concat_dict_values():
@@ -81,9 +83,9 @@ def test_concat_dict_values():
 
 
 def test_dict_from_table():
-    assert dict_from_table(table1, col_num=0, delimitor=':')['Daniel'] == ['36', 'dan@gmail.com']
-    assert dict_from_table(table1, col_num=2, delimitor=':')['slv@gmail.com'] == ['Silvia', '22']
-    assert dict_from_table(table1, col_num=1, delimitor=':')['22'] == [['Mara', 'mara@outlook.com'], ['Silvia', 'slv@gmail.com']]
+    assert dict_from_table(table1, col_num=0, delimiter=':')['Daniel'] == ['36', 'dan@gmail.com']
+    assert dict_from_table(table1, col_num=2, delimiter=':')['slv@gmail.com'] == ['Silvia', '22']
+    assert dict_from_table(table1, col_num=1, delimiter=':')['22'] == [['Mara', 'mara@outlook.com'], ['Silvia', 'slv@gmail.com']]
     with raises(AssertionError):
         dict_from_table(1)
         dict_from_table(dictionary)
@@ -92,7 +94,7 @@ def test_dict_from_table():
 
 
 def test_create_line_index():
-    index1 = create_line_index(table1, col_num_list=[0,2], delimitor=':')
+    index1 = create_line_index(table1, col_num_list=[0,2], delimiter=':')
     index2 = create_line_index(table2, col_num_list=[0,1,2])
     assert index1['Silvia'] == 2
     assert index1['dan@gmail.com'] == 0
@@ -108,14 +110,14 @@ def test_create_line_index():
 
 
 def test_string_table_to_int_matrix():
-    matrix, references = string_table_to_int_matrix(table3, delimitor=':')
+    matrix, references = string_table_to_int_matrix(table3, delimiter=':')
     assert len(matrix[0]) == len(references)
     assert len(references[0]) == 2
     assert len(references[2]) == 3
     with raises(AssertionError):
         string_table_to_int_matrix(1)
         string_table_to_int_matrix(dictionary)
-        string_table_to_int_matrix(table3, delimitor=':', reference_data=[{'Masculino': 0}, {'DF': 0}])
+        string_table_to_int_matrix(table3, delimiter=':', reference_data=[{'Masculino': 0}, {'DF': 0}])
 
 
 
@@ -150,7 +152,7 @@ def test_read_target_line_on_text_json_file():
 def test_read_all_text_table_file():
     with open('text_table_file.test', 'w') as f:
         f.write(table5)
-    info = read_all_text_table_file('text_table_file.test', delimitor=':')
+    info = read_all_text_table_file('text_table_file.test', delimiter=':')
     fields = next(info)
     assert fields == ['nome', 'idade']
     assert next(info)[0] == "Daniel" 
@@ -162,13 +164,13 @@ def test_save_text_table_file():
     with open('text_table_file.test', 'w') as f:
         f.write(table5)
     
-    save_text_table_file('text_table_file.test', ['Bruno', '27'], delimitor=':', constrain_cols=False)
-    save_text_table_file('text_table_file.test', {'nome': 'Manoel', 'idade': '57'}, delimitor=':', constrain_cols=True)
-    assert read_target_line_on_text_table_file('text_table_file.test', 4, delimitor=":")['data']['idade'] == '27'
-    assert read_target_line_on_text_table_file('text_table_file.test', 5, delimitor=":")['data']['nome'] == 'Manoel'
+    save_text_table_file('text_table_file.test', ['Bruno', '27'], delimiter=':', constrain_cols=False)
+    save_text_table_file('text_table_file.test', {'nome': 'Manoel', 'idade': '57'}, delimiter=':', constrain_cols=True)
+    assert read_target_line_on_text_table_file('text_table_file.test', 4, delimiter=":")['data']['idade'] == '27'
+    assert read_target_line_on_text_table_file('text_table_file.test', 5, delimiter=":")['data']['nome'] == 'Manoel'
     with raises(AssertionError):
-        save_text_table_file('text_table_file.test', 'Bruno:27', delimitor=':', constrain_cols=True)
-        save_text_table_file('text_table_file.test', ['Bruno', '27'], delimitor=':', constrain_cols=True)
+        save_text_table_file('text_table_file.test', 'Bruno:27', delimiter=':', constrain_cols=True)
+        save_text_table_file('text_table_file.test', ['Bruno', '27'], delimiter=':', constrain_cols=True)
         save_text_table_file('text_table_file.test', {'name': 'Bruno', 'age': '27'}, constrain_cols=True)
     os.remove('text_table_file.test')
 
@@ -176,7 +178,7 @@ def test_save_text_table_file():
 def test_read_target_line_on_text_table_file():
     with open('text_table_file.test', 'w') as f:
         f.write(table5)
-    info = read_target_line_on_text_table_file('text_table_file.test', 2, delimitor=':')
+    info = read_target_line_on_text_table_file('text_table_file.test', 2, delimiter=':')
     assert info['fields'] == ['nome', 'idade']
     assert info['data']['nome'] == "Helena" 
     assert info['data']['idade'] == "42" 
@@ -186,7 +188,7 @@ def test_read_target_line_on_text_table_file():
 def test_create_column_metainfo_file():
     with open('text_table_file.test', 'w') as f:
         f.write(table5)
-    create_column_metainfo_file('text_table_file.test', delimitor=':', col_space=3)
+    create_column_metainfo_file('text_table_file.test', delimiter=':', col_space=3)
     assert os.path.isfile('text_table_file.test')
     metadata = load_json('metainfo_text_table_file.test', file_folder=tmp_folder)
     assert isinstance(metadata, dict)
@@ -248,4 +250,27 @@ def test_load_json():
     os.remove('text_json_file.test')
 
 
+def test_load_csv():
+    info = load_csv("csv_table.csv", file_folder=test_data_folder)
+    first_line = next(info)
+    assert list(first_line.keys()) == ['nome', 'idade', 'altura'] 
+    assert first_line['nome'] == 'Daniel'
 
+
+def test_load_full_csv():
+    info = load_full_csv("csv_table.csv", file_folder=test_data_folder)
+    assert len(info) == 4
+    assert info[3]['nome'] == 'Vicente'
+
+
+def test_load_csv_cols():
+    info1 = load_csv_cols("csv_table.csv", file_folder=test_data_folder, selected_cols=['nome'])
+    info2 = load_csv_cols("csv_table.csv", file_folder=test_data_folder, selected_cols=['nome', 'idade'], sort_by='nome')
+    info3 = load_csv_cols("csv_table.csv", file_folder=test_data_folder, selected_cols=['nome', 'altura'], sort_by='altura')
+    info4 = load_csv_cols("csv_table.csv", file_folder=test_data_folder, selected_cols=['nome', 'idade'], sort_by='idade', reverse_sort=True)
+    info5 = load_csv_cols("csv_table.csv", file_folder=test_data_folder, selected_cols=['nome', 'idade'], implict_convert=False)
+    assert info1 == [['Daniel'], ['Mariana'], ['Alice'], ['Vicente']]
+    assert info2 == [['Alice', 6], ['Daniel', 38], ['Mariana', 36], ['Vicente', 3]]
+    assert info3 == [['Vicente', 0.9], ['Alice', 1.2], ['Mariana', 1.7], ['Daniel', 1.84]]
+    assert info4 == [['Daniel', 38], ['Mariana', 36], ['Alice', 6], ['Vicente', 3]]
+    assert info5 == [['Daniel', '38'], ['Mariana', '36'], ['Alice', '6'], ['Vicente', '3']]
