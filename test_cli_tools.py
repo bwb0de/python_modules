@@ -274,3 +274,27 @@ def test_load_csv_cols():
     assert info3 == [['Vicente', 0.9], ['Alice', 1.2], ['Mariana', 1.7], ['Daniel', 1.84]]
     assert info4 == [['Daniel', 38], ['Mariana', 36], ['Alice', 6], ['Vicente', 3]]
     assert info5 == [['Daniel', '38'], ['Mariana', '36'], ['Alice', '6'], ['Vicente', '3']]
+
+
+def test_save_csv():
+    save_csv(table2, "table2.csv", file_folder=test_data_folder, header=['nome', 'idade', 'eml'])
+    info1 = load_full_csv("table2.csv", file_folder=test_data_folder)
+    info1[0]['nome'] = 'Daniel Ferraz'
+    save_csv(info1, "table2-v2.csv", file_folder=test_data_folder, file_method='a')
+    info2 = load_full_csv("table2-v2.csv", file_folder=test_data_folder)
+    info3 = load_csv_cols("table2.csv", file_folder=test_data_folder, selected_cols=['idade'])
+
+    assert info2[0]['nome'] == 'Daniel Ferraz'
+    assert info3 == [[36], [22], [22]]
+    
+    os.remove(test_data_folder + os.sep + "table2.csv")
+    os.remove(test_data_folder + os.sep + "table2-v2.csv")
+
+    with raises(TypeError):
+        save_csv(table1, "table2.csv")
+        save_csv(table3, "table2.csv")
+        save_csv(table4, "table2.csv")
+    with raises(ValueError):
+        save_csv(table2, "table2.csv", file_folder=test_data_folder, header=['nome', 'idade', 'eml'], file_method='r')
+
+        
