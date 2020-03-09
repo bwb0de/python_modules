@@ -467,7 +467,6 @@ def create_column_metainfo_file(text_table_filename, text_table_file_folder=os.c
 	assert isinstance(col_space, int)
 	
 	output_file = 'metainfo_'+text_table_filename
-	#output_file = tmp_folder + os.sep + 'metainfo_'+text_table_filename
 	
 	text_table_generator = read_all_text_table_file(text_table_filename, delimiter=delimiter)
 	
@@ -792,6 +791,82 @@ def make_random_float_list(num_of_elements, min_val=0, max_val=10000):
 	return output
 
 
+def save_csv(list_of_dicts, filename, file_folder=os.curdir, header=[], file_method=False, delimiter='\t', lineterminator='\n', tmp_folder=tmp_folder):
+	"""Função de criação de arquivos CSV, grava informações de matrizes NxN ou lista de dicionários
+	
+	Arguments:
+		list_of_dicts {tables} -- lista ou tupla contendo dicionários ou outras listas/tuplas
+		filename {string} -- nome do arquivo CSV onde informações serão gravadas
+	
+	Keyword Arguments:
+		file_folder {string} -- pasta onde o arquivo está localizado (default: {os.curdir})
+		header {list} -- lista de cabeçalho do arquivo (default: {[]})
+		delimiter {str} -- delimitador de campos (default: {'\t'})
+		lineterminator {str} -- delimitador de fim de linha (default: {'\n'})
+		tmp_folder {[type]} -- pasta temporária do sistema (default: {tmp_folder})
+	
+	Raises:
+		TypeError: formatos de dados inadequados implicarão erro
+	"""
+
+	if isinstance(list_of_dicts[0], (dict, OrderedDict)):
+		fields = list_of_dicts[0].keys()
+		write_method='dict'
+
+	elif isinstance(list_of_dicts[0], (list, tuple)):
+		if not header:
+			num_of_cols = len(list_of_dicts[0])
+			idx = itertools.count()
+			fields = []
+			while num_of_cols:
+				print(list_of_dicts[0][next(idx)])
+				label = read_input(input_label="Qual o rótulo deste campo?")
+				fields.append(label)
+				num_of_cols -= 1
+		else:
+			fields = header
+		write_method='list'
+	
+	elif not file_method in [False, 'a']:
+		raise ValueError("Metodo de escrita em arquivo inválido")
+	
+	else:
+		raise TypeError("O objeto passado não corresponde ao aceito pela função")
+	
+	lockf = lockfile_name(filename)
+
+	while True:
+		if os.path.isfile(tmp_folder + os.sep + lockf):
+			time.sleep(0.1)
+		else:
+			create_lockfile(lockf)
+			break
+	
+	if file_method:
+		if not os.path.isfile(file_folder + os.sep + filename):
+			file_method_to_use = 'w'
+		else:
+			file_method_to_use = file_method
+	else:
+		file_method_to_use = 'w'
+
+	with open(file_folder + os.sep + filename, file_method_to_use) as f:
+		if write_method == 'dict':
+			w = csv.DictWriter(f, fields, delimiter=delimiter, lineterminator=lineterminator)
+			if file_method_to_use != 'a':
+				w.writeheader()
+			w.writerows(list_of_dicts)
+		
+		elif write_method == 'list':
+			w = csv.writer(f, delimiter=delimiter, quotechar='"', quoting=csv.QUOTE_MINIMAL)
+			if file_method_to_use != 'a':
+				w.writerow(fields)
+			for line in list_of_dicts:
+				w.writerow(line)
+	
+	remove_lockfile(lockf)
+
+
 
 def load_csv(filename, file_folder=os.curdir, delimiter='\t', lineterminator='\n'):
 	"""Função de leitura de arquivos CSV, retorna um gerador que apresenta as informações linha à linha.
@@ -817,6 +892,7 @@ def load_csv(filename, file_folder=os.curdir, delimiter='\t', lineterminator='\n
 				for col in fields:
 					ordered_row[col] = row[col]
 				yield ordered_row
+
 	except UnicodeDecodeError:
 		with open(os.path.join(file_folder, filename), encoding="cp1252") as f:
 			rd = csv.DictReader(f, delimiter=delimiter, lineterminator=lineterminator)
@@ -953,18 +1029,22 @@ def try_implict_convert(value):
 		{int|float|string} -- tenta retornar 'int' ou 'float', se não for possível devolve o valor de entrada.
 	"""
 
-	if re.search(r'\d*,\d*', value):
-		try:
-			value = value.replace(',','.')
-			value = float(value)
-		except: pass
-		return value
+	if (value.find(',') != -1) or (value.find('.') != -1):
+		if re.search(r'\d*,\d*', value):
+			try:
+				value = value.replace(',','.')
+				value = float(value)
+			except: pass
+			return value
 
-	elif re.search(r'\d*.\d*', value):
-		try:
-			value = float(value)
-		except: pass
-		return value
+		elif re.search(r'\d*.\d*', value):
+			try:
+				value = float(value)
+			except: pass
+			return value
+
+		else:
+			return value
 
 
 	elif re.search(r'\d*', value):
@@ -977,58 +1057,114 @@ def try_implict_convert(value):
 		
 
 
-
-
-#### Refatorar
-def fill_gaps(filename,refcol=[],targetcol=[],targetcolops=[]):
-	conteudo = load_csv(filename)
-	cols = load_csv_head(filename)
+def seek_for_csv_gaps(filename, file_folder=os.curdir, reference_cols=[], target_col=[], target_col_ops=[], delimiter='\t', lineterminator='\n', print_reference_cols=True, fill_gaps=False):
 	
-	print_refcol = True
-	keep_working = True
+	table = load_full_csv(filename, file_folder=file_folder, delimiter=delimiter, lineterminator=lineterminator)
+	fields = load_csv_head(filename, file_folder=file_folder, delimiter=delimiter, lineterminator=lineterminator)
 	
-	for l in conteudo:
-		if keep_working == False:
-			break
-		white_cels = 0
-		if targetcol == []:
-			for c in l:
-				if l[c] == '':
-					if print_refcol == True:
-						print_refcol = False
-						for r in refcol:
-							print(l[r])
-					l[c] = input(c+': ')
-				else:
-					white_cels += 1
+	show_reference_cols = print_reference_cols
+	lines_with_gaps = []
+
+	for line in table:
+		skip_save_dialog = True
+		if target_col == []:
+			for col in line:
+				if line[col] == '':
+					if show_reference_cols == True:
+						show_reference_cols = False
+						for ref_col in reference_cols:
+							print(line[ref_col])
+					if fill_gaps:
+						line[col] = read_input(input_label=col)
+					else: 
+						line[col] = ' '
+						skip_save_dialog = False
+						lines_with_gaps.append(line)
+
 		else:
-			for c in l:
-				for selected in targetcol:
-					print(c)
-					print(selected)
-					if l[selected] == '':
-						if print_refcol == True:
-							print_refcol = False
-							for r in refcol:
-								print(l[r])
-					else:
-						white_cels += 1			
-		
-		if white_cels < len(cols)-1:
-			while True:
-				op = input("Gravar alterações e continuar? s/n : ")
-				if (op == 's') or (op == 'S'):
-					save_csv(conteudo,filename)
-					break
-				elif (op == 'n') or (op == 'N'):
-					keep_working = False
-					break
-				else:
-					print('Responda [s] para sim ou [n] para não...')
-			
-		print_refcol = True
+			for selected in target_col:
+				if line[selected] == '':
+					if show_reference_cols == True:
+						show_reference_cols = False
+						for ref_col in reference_cols:
+							print(line[ref_col])
+					if fill_gaps:
+						line[col] = read_input(input_label=col)
+					else: 
+						line[col] = ' '
+						skip_save_dialog = False
+						lines_with_gaps.append(line)
+
+		if fill_gaps:
+			if skip_save_dialog == False:
+				op = sim_ou_nao(input_label="Gravar alterações e sair?")
+				if op == 's':
+					save_csv(table, filename)
+					return table
+
+		show_reference_cols = print_reference_cols
 	
-	return conteudo
+	if fill_gaps:
+		save_csv(table, filename)
+		print("Trabalho concluído...")
+		return table
+	else:
+		print_list_of_dict_as_table(lines_with_gaps)
+
+
+
+def print_list_of_dict_as_table(list_of_dicts, col_space=2):
+	"""Imprime no console uma lista de dicionários como uma tabela em formato texto
+	
+	Arguments:
+		list_of_dicts {list with dics inside} -- dicionários devem ter a mesma estrutura
+	
+	Keyword Arguments:
+		col_space {int} -- espaçamento definido entre as colunas (default: {2})
+	"""
+
+	assert isinstance(list_of_dicts, list)
+	assert isinstance(list_of_dicts[0], (dict, OrderedDict))
+
+	fields = list(list_of_dicts[0].keys())
+	fields_num = len(fields)
+
+	col_size = []
+	
+	while fields_num:
+		col_size.append(0)
+		fields_num -= 1
+
+	for line in list_of_dicts:
+		col_idx_count = itertools.count()
+		for col in fields:
+			col_idx = next(col_idx_count)
+			if len(line[col]) + col_space > col_size[col_idx]:
+				col_size[col_idx] = len(line[col]) + col_space
+	
+	fields_size = list(zip(fields, col_size))
+
+	output = []
+
+	for line in list_of_dicts:
+
+		output_line = ''
+		for info in fields_size:
+			output_line += line[info[0]].ljust(info[1])
+		output.append(output_line)
+	print_list(output)
+
+
+
+def print_list(iterator):
+	"""Imprime os elementos de uma lista
+	
+	Arguments:
+		iterator {list|tuple|iterator} -- objeto de entrada
+	"""
+	
+	for element in iterator:
+		print(element)
 
 
 
@@ -1100,31 +1236,6 @@ def convert_csv_type(filename, old_delimiter, new_delimiter, old_lineterminator=
 
 
 #### Refatorar
-def save_csv(list_of_dicts, path_to_file, header=None, delimiter='\t', lineterminator='\n', tmp_folder=tmp_folder):
-	'''
-	Escreve o conteudo de uma lista de dicionários em um arquivo CSV.
-	Esta função gera um arquivo de trava até que o processo seja concluído impossibilitanto a realização de cópias simultâneas.
-	A ordem do cabeçalho pode ser definido arbitrariamente mediante a inclusão de uma lista com o come das colunas na argumento "header".
-	'''
-
-	fields = list_of_dicts[0].keys()
-	lockf = lockfile_name(path_to_file)
-	initfolder = os.getcwd()
-
-	while True:
-		if os.path.isfile(tmp_folder+os.sep+lockf):
-			time.sleep(0.1)
-		else:
-			create_lockfile(lockf)
-			break
-
-	with open(path_to_file, 'w') as f:
-		w = csv.DictWriter(f, fields, delimiter=delimiter, lineterminator=lineterminator)
-		w.writeheader()
-		w.writerows(list_of_dicts)
-
-	os.chdir(initfolder)
-	remove_lockfile(lockf)
 
 
 #### Refatorar
