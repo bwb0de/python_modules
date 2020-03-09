@@ -379,7 +379,7 @@ def read_target_line_on_text_json_file(filename, line_number):
 
 
 
-def read_all_text_table_file(filename, delimiter='\t'):
+def read_all_text_table_file(filename, file_folder=file_folder, delimiter='\t'):
 	"""Ler todas as linhas de uma tabela em formato texto
 	
 	Arguments:
@@ -392,9 +392,10 @@ def read_all_text_table_file(filename, delimiter='\t'):
 		{generator} -- retorna as linhas uma a uma...
 	"""
 
-	with open(filename) as f:
+	with open(file_folder + os.sep + filename) as f:
 		for line in f:
 			yield split_and_strip(line, delimiter=delimiter)
+
 
 
 def split_and_strip(text, delimiter='\t'):
@@ -1167,46 +1168,128 @@ def print_list(iterator):
 		print(element)
 
 
+def load_data_file(filename, file_folder=os.curdir, delimiter='\t', lineterminator='\n', filemimetype='csv'):
+	"""Carrega arquivo de dados conforme o tipo do arquivo
+	
+	Arguments:
+		filename {string} -- nome do arquivo
+	
+	Keyword Arguments:
+		file_folder {string} -- local onde o arquivo se encontra (default: {os.curdir})
+		delimiter {char} -- caractere delimitador de campo, para arquivos CSV ou de texto (default: '\t')
+		lineterminator {char} -- caractere delimitador de linha (default: {'\n'})
+		filemimetype {string} -- tipo do arquivo de entrada, pode ser 'csv'|'json'|'txt' (default: {'csv'})
+	
+	Returns:
+		[type] -- [description]
+	"""
+	
+	assert filemimetype in ('csv', 'json', 'txt'), "Os únicos valores válidos para 'filemimetype' são: 'csv', 'json' ou 'txt'"
 
-#### Refatorar
-def extract_lines(filename, csv_col, test_value, delimiter='\t', backup_2_trash=True):
-	conteudo = load_csv(filename, delimiter=delimiter)
+	if filemimetype == 'csv':
+		conteudo = load_full_csv(filename, file_folder=file_folder, delimiter=delimiter, lineterminator=lineterminator)
+	elif filemimetype == 'json':
+		conteudo = load_json(filename, file_folder=file_folder)
+	elif filemimetype == 'txt':
+		conteudo = read_all_text_table_file(filename, file_folder=file_folder, delimiter=delimiter, lineterminator=lineterminator)
+	
+	return conteudo
+
+
+
+def save_data_file(filename, file_folder=os.curdir, delimiter='\t', lineterminator='\n', filemimetype='csv'):
+	pass
+
+
+def load_data_file_fields():
+	pass
+
+
+def seek_for_lines(filename, col, value, file_folder=os.curdir, filemimetype="csv", delimiter='\t', lineterminator='\n', extract=False, show_data=True):
+	"""Retorna ou exclui as linhas de um arquivo em que o 'valor' existe na coluna 'col'.
+	
+	Arguments:
+		filename {string} -- nome do arquivo alvo
+		value {string|int|float} -- valor que deve ser verificado
+		col {string} -- coluna onde o valor pode ser encontrado
+	
+	Keyword Arguments:
+		file_folder {string}-- local onde o arquivo está localizado (default: {os.curdir})
+		filemimetype {string} -- tipo do arquivo de entrada pode ser 'csv'|'json'|'txt' (default: {'csv'})
+		delimiter {string} -- delimitador de campo, para arquivos CSV (default: {'\t'})
+		lineterminator {string} -- delimitador de fim de linha, para arquivos CSV (default: {'\n'})
+		extract {bool} -- indica se as informações devem ser extraídas do arquivo original (default: {False})
+		show_data {bool} -- indica se as informações encontradas devem ser retornadas ou não (default: {True})
+	
+	Returns:
+		{list} -- retorna uma lista de dicionários que pode ser manipulada ou salva como CSV ou JSON
+	"""
+	
+	assert all(isinstance(filename, str), isinstance(col, str)), "Os argumentos 'filename' e 'col' devem ser do tipo 'str'"
+	assert isinstance(value, (str, int, float)), "O argumento 'valor' deve ser de em dos tipos: 'str', 'int' ou 'float'"
+	assert all(isinstance(extract, bool), isinstance(show_data, bool)), "Os argumentos 'extract' e 'show_data' devem ser boleanos"
+
+	conteudo = load_data_file(filename, file_folder=file_folder, delimiter=delimiter, lineterminator=lineterminator, filemimetype=filemimetype)
+
 	keep_this = []
 	remove_that = []
+	
 	for line in conteudo:
-		if line[csv_col] == test_value:
+		if line[col] == value:
 			remove_that.append(line)
 		else:
 			keep_this.append(line)
-	op = input("Deseja remover as {} linhas encontradas na tabela? (s/n)".format(len(remove_that)))
-	if op == "s" or op == "S":
-		save_csv(keep_this, filename)
-		if backup_2_trash == True:
-			new_filename = time.ctime().replace(' ','_') + "_rmLines_from_" + filename
-			save_csv(remove_that, new_filename)
+	
+	if extract:
+		#Incluir save_data_file aqui...
+		save_csv(keep_this, filename, file_folder=file_folder, delimiter=delimiter, lineterminator=lineterminator)
+		new_filename = time.ctime().replace(' ','_') + "removed_lines_from_" + filename
+		save_csv(remove_that, new_filename, file_folder=file_folder, delimiter=delimiter, lineterminator=lineterminator))
+	
+	if show_data:
+		print_list_of_dict_as_table(remove_that)
+		return remove_that
+	
 
+def copy_col(filename, source_col, destination_col, file_folder=os.curdir, filemimetype="csv", delimiter='\t', lineterminator='\n', preserve_existent_value=True):
+	"""Copia as informações de 'source_col' para 'destination_col', cria a coluna de destino caso ela não exista
+	
+	Arguments:
+		filename {string} -- nome do arquivo alvo
+		source_col {string|iterator} -- coluna de origem
+		destination_col {string} -- coluna de destino
+	
+	Keyword Arguments:
+		file_folder {string} -- local onde o arquivo 'filename' está (default: {os.curdir})
+		filemimetype {string} -- tipo do arquivo de entrada pode ser 'csv'|'json'|'txt' (default: {'csv'})
+		delimiter {string} -- delimitador de campo, para arquivos CSV (default: {'\t'})
+		lineterminator {string} -- delimitador de fim de linha, para arquivos CSV (default: {'\n'})
+		preserve_existent_value {bool} -- indica se o valor no destino deve ser mantido ou substituído (default: {True})
+	"""
 
-
-#### Refatorar
-def copy_col(filename, source_col, destination_col):
 	"Copia o conteúdo de uma coluna alvo para uma coluna de destino se a célula do destino ainda não estiver preechida"
-	conteudo = load_csv(filename)
+
+	conteudo = load_data_file(filename, file_folder=file_folder, delimiter=delimiter, lineterminator=lineterminator)
+
+	#Sunstituir por 'load_data_file_fields', quando implementado
 	cols = load_csv_head(filename)
-	change_info = False
+
+	save_file = False
 	if destination_col in cols:
 		for line in conteudo:
 			if line[source_col] != '' and line[destination_col] == '':
-				change_info = True
+				save_file = True
 				line[destination_col] = line[source_col]
 	else:
 		for line in conteudo:
 			line[destination_col] = ''
 			if line[source_col] != '' and line[destination_col] == '':
-				change_info = True
+				save_file = True
 				line[destination_col] = line[source_col]		
 	
-	if change_info == True:
-		print("Cópia efetuada...")
+	if save_file:
+		print("Cópia efetuada... Gravando informações no arquivo...")
+		#Substituir por 'save_data_file'
 		save_csv(conteudo, filename)
 	else:
 		print("Não há o que alterar...")
