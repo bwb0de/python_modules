@@ -379,7 +379,7 @@ def read_target_line_on_text_json_file(filename, line_number):
 
 
 
-def read_all_text_table_file(filename, file_folder=file_folder, delimiter='\t'):
+def read_all_text_table_file(filename, file_folder=os.curdir, delimiter='\t'):
 	"""Ler todas as linhas de uma tabela em formato texto
 	
 	Arguments:
@@ -1191,7 +1191,7 @@ def load_data_file(filename, file_folder=os.curdir, delimiter='\t', lineterminat
 	elif filemimetype == 'json':
 		conteudo = load_json(filename, file_folder=file_folder)
 	elif filemimetype == 'txt':
-		conteudo = read_all_text_table_file(filename, file_folder=file_folder, delimiter=delimiter, lineterminator=lineterminator)
+		conteudo = read_all_text_table_file(filename, file_folder=file_folder, delimiter=delimiter)
 	
 	return conteudo
 
@@ -1244,7 +1244,7 @@ def seek_for_lines(filename, col, value, file_folder=os.curdir, filemimetype="cs
 		#Incluir save_data_file aqui...
 		save_csv(keep_this, filename, file_folder=file_folder, delimiter=delimiter, lineterminator=lineterminator)
 		new_filename = time.ctime().replace(' ','_') + "removed_lines_from_" + filename
-		save_csv(remove_that, new_filename, file_folder=file_folder, delimiter=delimiter, lineterminator=lineterminator))
+		save_csv(remove_that, new_filename, file_folder=file_folder, delimiter=delimiter, lineterminator=lineterminator)
 	
 	if show_data:
 		print_list_of_dict_as_table(remove_that)
