@@ -536,7 +536,7 @@ def print_text_table_file(text_table_filename, count_lines=True, delimiter='\t')
 
 
 
-def save_text_table_file(filename, new_line, delimiter='\t', constrain_cols=True):
+def append_to_text_table_file(new_line, filename, file_folder=os.curdir, delimiter='\t', constrain_cols=True):
 	"""Adiciona linha no final de uma tabela em texto
 	
 	Arguments:
@@ -564,7 +564,7 @@ def save_text_table_file(filename, new_line, delimiter='\t', constrain_cols=True
 		assert isinstance(new_line, (tuple, list)), "O argumento 'new_line' deve ser uma 'list' ou 'tuple'"
 		new_line = delimiter.join(new_line) + os.linesep
 	
-	with open(filename, 'a') as f:
+	with open(file_folder+os.sep+filename, 'a') as f:
 		if constrain_cols:
 			new_line_ordered_info = []
 			for field in fields:
@@ -1059,9 +1059,27 @@ def try_implict_convert(value):
 
 
 def seek_for_csv_gaps(filename, file_folder=os.curdir, reference_cols=[], target_col=[], target_col_ops=[], delimiter='\t', lineterminator='\n', print_reference_cols=True, fill_gaps=False):
+	"""Procura por celulas vazias em um arquivo CSV
+	
+	Arguments:
+		filename {string} -- nome do arquivo CSV alvo...
+	
+	Keyword Arguments:
+		file_folder {string} -- local onde o arquivo CSV está (default: {os.curdir})
+		reference_cols {list} -- lista com colunas de referencia que terão os valores impressos no console quando uma célula vazia for encontrada (default: {[]})
+		target_col {list} -- lista especificando as colunas a serem verificadas, se "[]" buscará qualquer célula vazia (default: {[]})
+		target_col_ops {list} -- lista/tabela de opções a serem usadas para o preenchimento do campo vazio conforme a posição da coluna alvo (default: {[]})
+		delimiter {string} -- delimitador das colunas (default: {'\t'})
+		lineterminator {string} -- delimitador de fim linha (default: {'\n'})
+		print_reference_cols {bool} -- indicador para impressão ou não dos valores das células de referência (default: {True})
+		fill_gaps {bool} -- se True, solicita a inclusão da informação pendente encontrada (default: {False})
+	
+	Returns:
+		{table} -- Salva automaticamnte o arquivo de origem e retorna a tabela modificada ao final da edição.
+	"""
 	
 	table = load_full_csv(filename, file_folder=file_folder, delimiter=delimiter, lineterminator=lineterminator)
-	fields = load_csv_head(filename, file_folder=file_folder, delimiter=delimiter, lineterminator=lineterminator)
+	#fields = load_csv_head(filename, file_folder=file_folder, delimiter=delimiter, lineterminator=lineterminator)
 	
 	show_reference_cols = print_reference_cols
 	lines_with_gaps = []
@@ -1097,7 +1115,7 @@ def seek_for_csv_gaps(filename, file_folder=os.curdir, reference_cols=[], target
 						lines_with_gaps.append(line)
 
 		if fill_gaps:
-			if skip_save_dialog == False:
+			if not skip_save_dialog:
 				op = sim_ou_nao(input_label="Gravar alterações e sair?")
 				if op == 's':
 					save_csv(table, filename)
@@ -1181,7 +1199,7 @@ def load_data_file(filename, file_folder=os.curdir, delimiter='\t', lineterminat
 		filemimetype {string} -- tipo do arquivo de entrada, pode ser 'csv'|'json'|'txt' (default: {'csv'})
 	
 	Returns:
-		[type] -- [description]
+		{table} -- retorna o conteúdo do arquivo alvo como uma tabela
 	"""
 	
 	assert filemimetype in ('csv', 'json', 'txt'), "Os únicos valores válidos para 'filemimetype' são: 'csv', 'json' ou 'txt'"
@@ -1197,8 +1215,19 @@ def load_data_file(filename, file_folder=os.curdir, delimiter='\t', lineterminat
 
 
 
-def save_data_file(filename, file_folder=os.curdir, delimiter='\t', lineterminator='\n', filemimetype='csv'):
-	pass
+def save_data_file(data, filename, file_folder=os.curdir, delimiter='\t', lineterminator='\n', filemimetype='csv'):
+
+	assert filemimetype in ('csv', 'json', 'txt'), "Os únicos valores válidos para 'filemimetype' são: 'csv', 'json' ou 'txt'"
+
+	if filemimetype == 'csv':
+		save_csv(data, filename, file_folder=file_folder, delimiter=delimiter, lineterminator=lineterminator)
+
+	elif filemimetype == 'json':
+		save_json(data, filename, file_folder=file_folder)
+
+	elif filemimetype == 'txt':
+		append_to_text_table_file(data, filename, file_folder=file_folder, delimiter=delimiter)
+
 
 
 def load_data_file_fields():
@@ -1225,9 +1254,9 @@ def seek_for_lines(filename, col, value, file_folder=os.curdir, filemimetype="cs
 		{list} -- retorna uma lista de dicionários que pode ser manipulada ou salva como CSV ou JSON
 	"""
 	
-	assert all(isinstance(filename, str), isinstance(col, str)), "Os argumentos 'filename' e 'col' devem ser do tipo 'str'"
+	assert all([isinstance(filename, str), isinstance(col, str)]), "Os argumentos 'filename' e 'col' devem ser do tipo 'str'"
 	assert isinstance(value, (str, int, float)), "O argumento 'valor' deve ser de em dos tipos: 'str', 'int' ou 'float'"
-	assert all(isinstance(extract, bool), isinstance(show_data, bool)), "Os argumentos 'extract' e 'show_data' devem ser boleanos"
+	assert all([isinstance(extract, bool), isinstance(show_data, bool)]), "Os argumentos 'extract' e 'show_data' devem ser boleanos"
 
 	conteudo = load_data_file(filename, file_folder=file_folder, delimiter=delimiter, lineterminator=lineterminator, filemimetype=filemimetype)
 
@@ -1241,10 +1270,9 @@ def seek_for_lines(filename, col, value, file_folder=os.curdir, filemimetype="cs
 			keep_this.append(line)
 	
 	if extract:
-		#Incluir save_data_file aqui...
-		save_csv(keep_this, filename, file_folder=file_folder, delimiter=delimiter, lineterminator=lineterminator)
+		save_data_file(keep_this, filename, file_folder=file_folder, delimiter=delimiter, lineterminator=lineterminator)
 		new_filename = time.ctime().replace(' ','_') + "removed_lines_from_" + filename
-		save_csv(remove_that, new_filename, file_folder=file_folder, delimiter=delimiter, lineterminator=lineterminator)
+		save_data_file(remove_that, new_filename, file_folder=file_folder, delimiter=delimiter, lineterminator=lineterminator)		
 	
 	if show_data:
 		print_list_of_dict_as_table(remove_that)
