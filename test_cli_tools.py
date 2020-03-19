@@ -160,18 +160,19 @@ def test_read_all_text_table_file():
     os.remove('text_table_file.test')
 
 
-def test_save_text_table_file():
+def test_append_to_text_table_file():
     with open('text_table_file.test', 'w') as f:
         f.write(table5)
+
     
-    save_text_table_file('text_table_file.test', ['Bruno', '27'], delimiter=':', constrain_cols=False)
-    save_text_table_file('text_table_file.test', {'nome': 'Manoel', 'idade': '57'}, delimiter=':', constrain_cols=True)
+    append_to_text_table_file(['Bruno', '27'], 'text_table_file.test', delimiter=':', constrain_cols=False)
+    append_to_text_table_file({'nome': 'Manoel', 'idade': '57'}, 'text_table_file.test', delimiter=':', constrain_cols=True)
     assert read_target_line_on_text_table_file('text_table_file.test', 4, delimiter=":")['data']['idade'] == '27'
     assert read_target_line_on_text_table_file('text_table_file.test', 5, delimiter=":")['data']['nome'] == 'Manoel'
     with raises(AssertionError):
-        save_text_table_file('text_table_file.test', 'Bruno:27', delimiter=':', constrain_cols=True)
-        save_text_table_file('text_table_file.test', ['Bruno', '27'], delimiter=':', constrain_cols=True)
-        save_text_table_file('text_table_file.test', {'name': 'Bruno', 'age': '27'}, constrain_cols=True)
+        append_to_text_table_file('Bruno:27', 'text_table_file.test', delimiter=':', constrain_cols=True)
+        append_to_text_table_file(['Bruno', '27'], 'text_table_file.test', delimiter=':', constrain_cols=True)
+        append_to_text_table_file({'name': 'Bruno', 'age': '27'}, 'text_table_file.test', constrain_cols=True)
     os.remove('text_table_file.test')
 
 
@@ -294,7 +295,10 @@ def test_save_csv():
         save_csv(table1, "table2.csv")
         save_csv(table3, "table2.csv")
         save_csv(table4, "table2.csv")
-    with raises(ValueError):
-        save_csv(table2, "table2.csv", file_folder=test_data_folder, header=['nome', 'idade', 'eml'], file_method='r')
-
+    
         
+def test_seek_for_lines():
+    assert seek_for_lines("csv_table.csv", "nome", "Alice", file_folder=test_data_folder) == [OrderedDict([('nome', 'Alice'), ('idade', '6'), ('altura', '1,20')])]
+    assert seek_for_lines("txt_table.txt", "nome", "Vicente", file_folder=test_data_folder, delimiter=":")[0]['escolaridade'] == 'Pré-escola'
+    assert len(seek_for_lines("txt_table.txt", "familia", "Cruz", file_folder=test_data_folder, delimiter=":")) == 4
+    assert len(seek_for_lines("txt_table.txt", "familia", "Silva", file_folder=test_data_folder, delimiter=":")) == 2
