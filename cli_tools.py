@@ -21,11 +21,77 @@ from random import randrange, randint
 from string import whitespace, punctuation, digits
 from collections import OrderedDict
 from copy import copy
+
 from decorators import only_tuple_and_list
 
-time.strptime('02/01/1986','%d/%m/%Y')
-
 tmp_folder = tempfile.gettempdir()
+
+class UnicOrderedList(list):
+    def __init__(self, iterator=()):
+        super(UnicOrderedList, self).__init__(iterator)
+        self.sorted = False
+
+    def __sub__(self, other):
+        for element in other:
+            self.remove(element)
+        return self
+
+    def __str__(self):
+        output = ""
+        for element in self:
+            output += ' -' + element + '\n'
+        return output
+
+    def append(self, element):
+        if self.index(element) != None:
+            print("Item já está na lista...")
+            return
+
+        try:
+            if element > self[-1]:
+                self.sorted = True
+            else:
+                self.sorted = False
+        except IndexError:
+            self.sorted = True
+        
+        super(UnicOrderedList, self).append(element)
+
+        if not self.sorted:
+            self.sort()
+
+    def index(self, element, self_list_nfo=False):
+        check_element = bisect_search_idx(element, self, (0, len(self)))
+        if not isinstance(check_element, bool): return check_element
+        else: return None
+            
+            
+
+class ExtendedDict(OrderedDict):
+    def __add__(self, other):
+        if len(self) > len(other):
+            iterated_dict = other.items()
+            copied_dict = self.copy()
+        else:
+            iterated_dict = self.items()
+            copied_dict = other.copy()
+
+        for item in iterated_dict:
+            if copied_dict.get(item[0]):
+                if type(copied_dict[item[0]]) == list:
+                    copied_dict[item[0]].append(item[1])
+                else:
+                    copied_dict[item[0]] = [copied_dict[item[0]], item[1]]
+            else:
+                copied_dict[item[0]] = item[1]
+        return copied_dict
+    
+    def append(self, key, value):
+        if not self.get(key):
+            self[key] = [value]
+        else:
+            self[key].append(value)
+
 
 def create_lockfile(filename):
 	"""Cria um arquivo vazio na pasta temporária para servir como trava
@@ -57,8 +123,6 @@ def lockfile_name(path_to_file):
 	"""
 
 	lkf_name = path_to_file.split(os.sep)[-1]
-	#if lkf_name.find(".") != -1 or lkf_name.find(".") != 0:
-	#	lkf_name = lkf_name.split(".")[0]
 	file_name = '~lock_'+str(lkf_name)
 	return file_name
 
@@ -175,13 +239,13 @@ def create_col_index(iterator):
 
 	assert isinstance(iterator, (tuple, list)), "Iterador não suportado, utilizar 'tuple' ou 'list' como argumento."
 
-	output = dict()
+	output = ExtendedDict()
 
 	n = itertools.count()
 
 	for col in iterator:
 		idx = next(n)
-		output[col] = idx
+		output.append(col, idx)
 	
 	return output
 
@@ -293,7 +357,7 @@ def ask_for_col_labels(num_of_cols, table_first_line, use_delimiter=True, delimi
 	return output
 
 
-def string_table_to_int_matrix(iterator, reference_data=False, delimiter='\t'):
+def string_table_to_int_matrix(iterator, reference_data=False, reversed_reference_data=False, delimiter='\t'):
 	"""Converte uma tabela com strings em uma matriz numérica a partir de uma referência prévia ou a partir da atribuição arbitrária de números aos valores dos campos textuais na ordem em que estes são apresentados
 	
 	Returns:
@@ -312,13 +376,17 @@ def string_table_to_int_matrix(iterator, reference_data=False, delimiter='\t'):
 		num_of_cols = len(iterator[0])
 
 	if not reference_data:
-		reference_list = []
+		reference_list = create_reference_table(num_of_cols=num_of_cols)
 	else:
 		reference_list = reference_data
 		assert len(reference_data) == num_of_cols, "A quantidade de dicionários na lista de referência de valores deve corresponder ao número de colunas da tabela"
-	
-	for n in range(num_of_cols):
-		reference_list.append({})
+
+	if not reversed_reference_data:
+		reversed_reference_list = create_reference_table(num_of_cols=num_of_cols)
+	else:
+		reversed_reference_list = reversed_reference_data
+		assert len(reversed_reference_data) == num_of_cols, "A quantidade de dicionários na lista de referência de valores deve corresponder ao número de colunas da tabela"
+
 
 	for line in iterator:
 		if use_delimiter:
@@ -333,14 +401,53 @@ def string_table_to_int_matrix(iterator, reference_data=False, delimiter='\t'):
 			if not reference_list[ref_idx].get(line[col_idx]): 
 				novo_escore = len(reference_list[ref_idx]) + 1
 				reference_list[ref_idx][line[col_idx]] = novo_escore
+				reversed_reference_list[ref_idx][novo_escore] = line[col_idx] 
 				numeric_matrix_line.append(novo_escore)
 			else:
 				numeric_matrix_line.append(reference_list[ref_idx][line[col_idx]])
 
 		numeric_matrix.append(numeric_matrix_line)
 
-	return numeric_matrix, reference_list
+	return numeric_matrix, reference_list, reversed_reference_list
 		
+
+
+def create_reference_table(num_of_cols=0, zeros=False):
+
+	output = []
+
+	while num_of_cols:
+		if zeros:
+			output.append(0)
+		else:
+			output.append({})
+		num_of_cols -= 1
+
+	return output
+
+
+def print_numeric_matrix(matrix_iterator, translator=False, col_wid=False, return_value=True):
+	
+	output = ''
+	
+	for list_obj in matrix_iterator:
+		n = itertools.count()
+		line = ""
+		for cell in list_obj:
+			if translator:
+				col_idx = next(n)
+				if col_wid:
+					line += translator[col_idx][cell].ljust(col_wid[col_idx])
+				else:
+					line += translator[col_idx][cell]
+		if not return_value:
+			print(line)
+		else:
+			output += line + os.linesep
+	
+	return output
+
+
 
 
 def read_all_text_json_file(filename):
@@ -1317,8 +1424,7 @@ def copy_col(filename, source_col, destination_col, file_folder=os.curdir, filem
 	
 	if save_file:
 		print("Cópia efetuada... Gravando informações no arquivo...")
-		#Substituir por 'save_data_file'
-		save_csv(conteudo, filename)
+		save_data_file(conteudo, filename, file_folder=file_folder, delimiter=delimiter, lineterminator=lineterminator, filemimetype=filemimetype)
 	else:
 		print("Não há o que alterar...")
 
