@@ -9,29 +9,34 @@ import re
 import os
 
 from collections import OrderedDict
-from modules.cli_tools import strip_simbols, strip_spaces, verde, amarelo, select_op, limpar_tela, branco, amarelo, vermelho
-import modules.py_pickle_handlers as pk
+
+from cli_tools import strip_simbols, strip_spaces, verde, amarelo, select_op, limpar_tela, branco, amarelo, vermelho, read_input
+from cli_tools import bisect_search_idx, create_col_index, string_table_to_int_matrix, create_reference_table, print_numeric_matrix
+from cli_tools import ExtendedDict, UnicOrderedList
+
+import py_pickle_handlers as pk
+
 
 
 class PickleDataType():
-    def __init__(self):
-        self.target_folder = False
-        self.filename = False
+    def __init__(self, target_folder=False, filename=False):
+        self.target_folder = target_folder
+        self.filename = filename
 
-    def persist(self, file_ext=False, fname=False):
-        if fname:
-            self.filename = fname
+    def persist(self, file_ext=False, filename=False):
+        if filename:
+            self.filename = filename
 
         if not self.filename:
-            self.filename = input('Defina o nome para o arquivo de saída: ')
+            self.filename = read_input(input_label="Defina o nome para o arquivo de saída")
 
         if file_ext:
             self.filename = self.filename.strip() + file_ext
             
         if not self.target_folder:
-            input_value = input('Defina a pasta de destino [{}]: '.format(amarelo("aperte ENTER para pasta corrente")))
+            input_value = read_input(input_label='Defina a pasta de destino [{}]: '.format(amarelo("aperte ENTER para pasta corrente")))
             if not input_value:
-                self.target_folder = '.'
+                self.target_folder = os.curdir
 
         pk.write_pickle(self, self.target_folder, self.filename)
 
@@ -150,113 +155,8 @@ class Form(PickleDataType):
 
 
 
-class Extended_UniqueItem_List(list):
-    def __init__(self, iterator=()):
-        super(Extended_UniqueItem_List, self).__init__(iterator)
-        self.sorted = False
-
-    def __sub__(self, other):
-        for element in other:
-            self.remove(element)
-        return self
-
-    def __str__(self):
-        output = ""
-        for element in self:
-            output += ' -' + element + '\n'
-        return output
-
-    def append(self, element):
-        if element in self:# self.index(element):
-            return
-
-        try:
-            if element > self[-1]:
-                self.sorted = True
-            else:
-                self.sorted = False
-        except IndexError:
-            self.sorted = True
-        
-        super(Extended_UniqueItem_List, self).append(element)
-
-        if not self.sorted:
-            self.sort()
-
-    def index(self, element, self_list_nfo=False): # Bisection search
-        if not self_list_nfo:
-            self_list_nfo = self
-
-        if len(self_list_nfo) == 0:
-            return False
-        
-        elif len(self_list_nfo) == 1:
-            if element == self_list_nfo[0]:
-                return True
-            else:
-                return False
-
-        slice_init = 0
-        slice_end = len(self_list_nfo)
-        section_mid_point_ref = slice_end - slice_init
-        mid = (section_mid_point_ref // 2)
-        position_fixer = slice_init
-        
-
-        while section_mid_point_ref != 0:
-            section = self_list_nfo[slice_init:slice_end]
-
-            if len(section) == 1:
-                if section[0] == element:
-                    return position_fixer + mid
-                else:
-                    return False
-
-            if section[mid] == element:
-                return position_fixer + mid
-            
-            elif element > section[mid]:
-                slice_init = slice_init + mid
-                fixer_pass = False
-                
-            elif element < section[mid]:
-                slice_end = mid + position_fixer
-                fixer_pass = True
-            
-            if not fixer_pass:
-                position_fixer += mid
-                
-            section_mid_point_ref = slice_end - slice_init
-            mid = (section_mid_point_ref // 2)
-        
-        return False
-            
 
 
-class ExtendedDict(OrderedDict):
-    def __add__(self, other):
-        if len(self) > len(other):
-            iterated_dict = other.items()
-            copied_dict = self.copy()
-        else:
-            iterated_dict = self.items()
-            copied_dict = other.copy()
-
-        for item in iterated_dict:
-            if copied_dict.get(item[0]):
-                if type(copied_dict[item[0]]) == list:
-                    copied_dict[item[0]].append(item[1])
-                else:
-                    copied_dict[item[0]] = [copied_dict[item[0]], item[1]]
-            else:
-                copied_dict[item[0]] = item[1]
-        return copied_dict
-    
-    def append(self, key, value):
-        if not self.get(key):
-            self[key] = [value]
-        else:
-            self[key].append(value)
 
 
 class FileIndexDict(ExtendedDict, PickleDataType):
@@ -265,4 +165,50 @@ class FileIndexDict(ExtendedDict, PickleDataType):
         self.target_folder = False
         self.filename = False
 
+
+class UnicListFile(UnicOrderedList, PickleDataType):
+    def __init__(self, target_folder=False, filename=False):
+        super(UnicListFile, self).__init__()
+        self.target_folder = target_folder
+        self.filename = filename
+
+    def append(self, element):
+        super(UnicListFile, self).append(element)
+        self.persist()
+
+
+class HistoryTable(PickleDataType):
+    def __init__(self, target_folder=False, filename=False):
+        super(HistoryTable, self).__init__()
+        self.target_folder = target_folder
+        self.filename = filename
+        self.fieldnames = read_input(input_label="Indique o nome dos campos separando-os por ';'", dada_type='list', list_item_delimiter=';')
+        self.fieldnames_idx = create_col_index(self.fieldnames)
+        self.matrix = []
+        self.col_wid = create_reference_table(num_of_cols=len(self.fieldnames), zeros=True)
+        self.reference_table = create_reference_table(num_of_cols=len(self.fieldnames))
+        self.reversed_reference_table = create_reference_table(num_of_cols=len(self.fieldnames))
+
+    def append(self, dictionary):
+
+        assert isinstance(dictionary, dict)
+
+        new_line = list(range(0, len(self.fieldnames)))
+        for key in dictionary.keys():
+            try:
+                new_line[self.fieldnames_idx[key][0]] = dictionary[key]
+                if len(dictionary[key]) > self.col_wid[self.fieldnames_idx[key][0]]:
+                    self.col_wid[self.fieldnames_idx[key][0]] = len(dictionary[key]) + 2
+
+            except KeyError:
+                print("Coluna não encontrada...")
+                return
+
+        lines = string_table_to_int_matrix([new_line], reference_data=self.reference_table, reversed_reference_data=self.reversed_reference_table)
+        self.matrix = self.matrix + lines[0]
+        self.persist()
+    
+
+    def __str__(self):
+        return print_numeric_matrix(self.matrix, translator=self.reversed_reference_table, col_wid=self.col_wid, return_value=True)
 
