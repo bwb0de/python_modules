@@ -7,11 +7,12 @@
 import itertools
 import re
 import os
+import time
 
 from collections import OrderedDict
 
 from cli_tools import strip_simbols, strip_spaces, verde, amarelo, select_op, limpar_tela, branco, amarelo, vermelho, read_input
-from cli_tools import bisect_search_idx, create_col_index, string_table_to_int_matrix, create_reference_table, print_numeric_matrix
+from cli_tools import bisect_search_idx, create_col_index, string_table_to_int_matrix, create_reference_table, print_numeric_matrix, pick_options, today_date
 from cli_tools import ExtendedDict, UnicOrderedList
 
 import py_pickle_handlers as pk
@@ -178,27 +179,68 @@ class UnicListFile(UnicOrderedList, PickleDataType):
 
 
 class HistoryTable(PickleDataType):
-    def __init__(self, target_folder=False, filename=False):
+    def __init__(self, target_folder=False, filename=False, fieldnames=False, map_fields=False):
         super(HistoryTable, self).__init__()
         self.target_folder = target_folder
         self.filename = filename
-        self.fieldnames = read_input(input_label="Indique o nome dos campos separando-os por ';'", dada_type='list', list_item_delimiter=';')
+        self.__set_fieldnames__(fieldnames)
+        self.fieldnames_mapping = ExtendedDict()
+        self.fieldnames_to_map = []
+        self.__set_mapping__(map_fields)
         self.fieldnames_idx = create_col_index(self.fieldnames)
         self.matrix = []
         self.col_wid = create_reference_table(num_of_cols=len(self.fieldnames), zeros=True)
         self.reference_table = create_reference_table(num_of_cols=len(self.fieldnames))
         self.reversed_reference_table = create_reference_table(num_of_cols=len(self.fieldnames))
 
+
+    def __str__(self):
+        return print_numeric_matrix(self.matrix, translator=self.reversed_reference_table, col_wid=self.col_wid, return_value=True)
+
+
+    def __set_fieldnames__(self, fieldnames):
+        base_fieldnames = ['data_registro']
+
+        if fieldnames:
+            assert isinstance(fieldnames, (list, tuple)), "Argumento 'fieldnames', deve ser do tipo 'list' ou 'tuple'"
+            custom_fieldnames = fieldnames
+        else:
+            custom_fieldnames = read_input(input_label="Indique o nome dos campos separando-os por ';'", dada_type='list', list_item_delimiter=';')
+        
+        self.fieldnames = base_fieldnames + custom_fieldnames
+
+
+    def __set_mapping__(self, map_fields):
+        if map_fields:
+            if isinstance(map_fields, bool):
+                self.fieldnames_to_map = pick_options(self.fieldnames, input_label="Selecione as colunas a serem mapeadas", max_selection=len(self.fieldnames))
+            else:
+                assert isinstance(fieldnames, (list, tuple)), "Argumento 'map_fields', deve ser do tipo 'list' ou 'tuple'"
+                self.fieldnames_to_map = map_fields 
+
+
     def append(self, dictionary):
+        """Adiciona linha à tabela
+        
+        Arguments:
+            dictionary {dict} -- dicionário contendo as mesmas chaves definidas em 'fieldnames'
+        """
 
         assert isinstance(dictionary, dict)
 
+        dictionary['data_registro'] = today_date()
+
+        matrix_lines = len(self.matrix)
         new_line = list(range(0, len(self.fieldnames)))
         for key in dictionary.keys():
+
             try:
                 new_line[self.fieldnames_idx[key][0]] = dictionary[key]
                 if len(dictionary[key]) > self.col_wid[self.fieldnames_idx[key][0]]:
                     self.col_wid[self.fieldnames_idx[key][0]] = len(dictionary[key]) + 2
+                
+                if key in self.fieldnames_to_map:
+                    self.fieldnames_mapping.append(dictionary[key], matrix_lines)
 
             except KeyError:
                 print("Coluna não encontrada...")
@@ -209,6 +251,5 @@ class HistoryTable(PickleDataType):
         self.persist()
     
 
-    def __str__(self):
-        return print_numeric_matrix(self.matrix, translator=self.reversed_reference_table, col_wid=self.col_wid, return_value=True)
+atendimentos = HistoryTable(target_folder='/tmp', filename='Atendimentos.sps', fieldnames=['identificador', 'tipo_atd'], map_fields=['identificador'])
 
