@@ -562,6 +562,16 @@ def string_table_to_int_matrix(iterator, reference_data=False, reversed_referenc
 
 
 def create_reference_table(num_of_cols=0, zeros=False):
+	"""Cria uma lista com dicionários vazios para referenciação de valores. Opcionalmente cria uma lista com zeros.
+	
+	Keyword Arguments:
+		num_of_cols {int} -- número de colunas a serem inicializadas (default: {0})
+		zeros {bool} -- se True, substitui os dicionários por zeros (default: {False})
+	
+	Returns:
+		{list_of_dict} -- lista de dicionários vazios para referenciação de colunas
+		{list_of_ints} -- lista com zeros para atualização de valores, exemplo: largura colunas de uma tabela
+	"""
 
 	output = []
 
@@ -575,7 +585,20 @@ def create_reference_table(num_of_cols=0, zeros=False):
 	return output
 
 
-def print_numeric_matrix(matrix_iterator, translator=False, col_wid=False, return_value=True):
+def print_numeric_matrix(matrix_iterator, translator=False, col_wid=False, return_value=False):
+	"""Imprime uma matrix de inteiros reconvertida conforme as referencias apresentadas em 'translator'
+	
+	Arguments:
+		matrix_iterator {table} -- lista/tupla de listas/tuplas
+	
+	Keyword Arguments:
+		translator {list_of_dict} -- tabela de referência para conversão de valores (default: {False})
+		col_wid {list_of_ints} -- lista de inteiros com as respectivas larguras das colunas (default: {False})
+		return_value {bool} -- indica se a string de saída da tabela deve ser retornada ou impressa (default: {False})
+	
+	Returns:
+		{string} -- se 'return_value' for True, retorna a string da tabela
+	"""
 	
 	output = ''
 	
@@ -594,7 +617,8 @@ def print_numeric_matrix(matrix_iterator, translator=False, col_wid=False, retur
 		else:
 			output += line + os.linesep
 	
-	return output
+	if return_value:
+		return output
 
 
 
