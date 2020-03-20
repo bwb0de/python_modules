@@ -130,6 +130,47 @@ def list_folder(folder):
     return os.listdir(os.getcwd()+os.sep+folder)
 
 
+def convert_date_string(s, string_format='pt-br'):
+    if string_format == 'pt-br':
+		return datetime.datetime.fromtimestamp(time.mktime(time.strptime(s, "%d/%m/%Y")))
+	elif string_format == 'us':
+		return datetime.datetime.fromtimestamp(time.mktime(time.strptime(s, "%m/%d/%Y")))
+	elif string_format == 'ISO':
+		return datetime.datetime.fromtimestamp(time.mktime(time.strptime(s, "%Y-%m-%d")))
+
+
+def create_period_pair(start_date, end_date):
+    start_dt = convert_date_string(start_date)
+    end_dt = convert_date_string(end_date)
+    return (start_dt, end_dt)
+
+def time_delta(start_date, end_date):
+    if isinstance(start_date, str) and  isinstance(end_date, str):
+        period = create_period_pair(start_date, end_date)
+    else:
+        period = (start_date, end_date)
+    return period[1] - period[0]
+
+def today_date(string_format='pt-br'):
+    if string_format == 'pt-br':
+		return time.strftime('%d/%m/%Y', time.gmtime())
+	elif string_format == 'us':
+		return time.strftime('%m/%d/%Y', time.gmtime())
+	elif string_format == 'ISO':
+		return time.strftime('%Y-%m-%d', time.gmtime())
+
+
+def add_list_elements(lista):
+
+	assert isinstance(lista, (list, tuple)), "Argumento deve ser do tipo 'list' ou 'tuple'"
+
+    output = 0
+    for item in lista:
+        output += item
+    return output
+
+
+
 def list_col_responses(iterator, col_num=0, delimiter='\t'):
 	"""Retorna os valores de uma tabela, linha à linha, para a coluna selecionada
 	
