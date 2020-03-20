@@ -14,6 +14,7 @@ import csv
 import tempfile
 import time
 import re
+import datetime
 
 from colored import fg, bg, attr
 from subprocess import getoutput
@@ -126,12 +127,32 @@ def lockfile_name(path_to_file):
 	file_name = '~lock_'+str(lkf_name)
 	return file_name
 
+
 def list_folder(folder):
-    return os.listdir(os.getcwd()+os.sep+folder)
+	"""Lista o conteúdo da pasta alvo
+
+	Arguments:
+		folder {string} -- caminho para a pasta a ser listada
+
+	Returns:
+		{list} -- lista com os nomes dos arquivos presentes na pasta
+	"""
+	return os.listdir(os.getcwd()+os.sep+folder)
 
 
 def convert_date_string(s, string_format='pt-br'):
-    if string_format == 'pt-br':
+	"""Converte uma string de data para um objeto 'datetime.datetime'
+	
+	Arguments:
+		s {string} -- data em formato de string
+	
+	Keyword Arguments:
+		string_format {string} -- faz a conversão conforme as convenções da localidade (default: {'pt-br'})
+	
+	Returns:
+		{datetime.datetime} -- objeto 'datetime.datetime' para operações matemáticas com data
+	"""
+	if string_format == 'pt-br':
 		return datetime.datetime.fromtimestamp(time.mktime(time.strptime(s, "%d/%m/%Y")))
 	elif string_format == 'us':
 		return datetime.datetime.fromtimestamp(time.mktime(time.strptime(s, "%m/%d/%Y")))
@@ -139,20 +160,61 @@ def convert_date_string(s, string_format='pt-br'):
 		return datetime.datetime.fromtimestamp(time.mktime(time.strptime(s, "%Y-%m-%d")))
 
 
-def create_period_pair(start_date, end_date):
-    start_dt = convert_date_string(start_date)
-    end_dt = convert_date_string(end_date)
-    return (start_dt, end_dt)
+def create_period_pair(start_date, end_date, string_format='pt-br'):
+	"""Recebe uma data de inínio e fim e retorna uma tupla com os respectivos 'datetime.datetime' representando o período
 
-def time_delta(start_date, end_date):
-    if isinstance(start_date, str) and  isinstance(end_date, str):
-        period = create_period_pair(start_date, end_date)
-    else:
-        period = (start_date, end_date)
-    return period[1] - period[0]
+	Arguments:
+		start_date {string} -- data de início do período
+		end_date {string} -- data de fim do período
+
+	Keyword Arguments:
+		string_format {string} -- faz a conversão conforme as convenções da localidade (default: {'pt-br'})
+
+	Returns:
+		{tuple} -- tupla com dois objetos 'datetime.datetime'
+	"""
+
+	start_dt = convert_date_string(start_date, string_format=string_format)
+	end_dt = convert_date_string(end_date, string_format=string_format)
+	return (start_dt, end_dt)
+
+def time_delta(start_date, end_date, string_format='pt-br', output_info='dias'):
+	"""Calcula a variação de tempo, em dias, entre duas datas
+
+	Arguments:
+		start_date {string} -- data de início
+		end_date {string} -- data de fim
+
+	Keyword Arguments:
+		string_format {string} -- informa a convenção da localidade para conversão da data (default: {'pt-br'})
+
+	Returns:
+		{int} -- número de dias entre a data de início e fim
+		{float} -- número de anos entre a data de início e fim
+	"""
+	if isinstance(start_date, str) and  isinstance(end_date, str):
+		period = create_period_pair(start_date, end_date)
+	else:
+		period = (start_date, end_date)
+
+	if output_info == 'dias':
+		return (period[1] - period[0]).days
+	
+	elif output_info == 'anos':
+		return (period[1] - period[0]).days / 365
+
 
 def today_date(string_format='pt-br'):
-    if string_format == 'pt-br':
+	"""Retorna uma string com a data do dia
+	
+	Keyword Arguments:
+		string_format {string} -- informa a convenção da localidade para formatação da string (default: {'pt-br'})
+	
+	Returns:
+		{string} -- data correspondente ao dia vigente
+	"""
+
+	if string_format == 'pt-br':
 		return time.strftime('%d/%m/%Y', time.gmtime())
 	elif string_format == 'us':
 		return time.strftime('%m/%d/%Y', time.gmtime())
@@ -161,13 +223,21 @@ def today_date(string_format='pt-br'):
 
 
 def add_list_elements(lista):
+	"""Adiniona os elementos de uma lista numérica
+	
+	Arguments:
+		lista {list|tuple} -- lista com números a serem adicionados
+	
+	Returns:
+		{int|float} -- resultado da soma entre os elementos
+	"""
 
 	assert isinstance(lista, (list, tuple)), "Argumento deve ser do tipo 'list' ou 'tuple'"
 
-    output = 0
-    for item in lista:
-        output += item
-    return output
+	output = 0
+	for item in lista:
+		output += item
+	return output
 
 
 
