@@ -178,6 +178,7 @@ def create_period_pair(start_date, end_date, string_format='pt-br'):
 	end_dt = convert_date_string(end_date, string_format=string_format)
 	return (start_dt, end_dt)
 
+
 def time_delta(start_date, end_date, string_format='pt-br', output_info='dias'):
 	"""Calcula a variação de tempo, em dias, entre duas datas
 
@@ -204,6 +205,7 @@ def time_delta(start_date, end_date, string_format='pt-br', output_info='dias'):
 		return (period[1] - period[0]).days / 365
 
 
+
 def today_date(string_format='pt-br'):
 	"""Retorna uma string com a data do dia
 	
@@ -220,6 +222,42 @@ def today_date(string_format='pt-br'):
 		return time.strftime('%m/%d/%Y', time.gmtime())
 	elif string_format == 'ISO':
 		return time.strftime('%Y-%m-%d', time.gmtime())
+
+
+def years_since(date, string_format='pt-br'):
+	"""Retorna um float com a diferença em anos desde a data especificada
+	
+	Arguments:
+		date {string} -- data passada a ser verificada
+	
+	Keyword Arguments:
+		string_format {string} -- informa a convenção da localidade da string (default: {'pt-br'})
+	
+	Returns:
+		{float} -- número representando a distancia em anos desde a data especificada
+	"""
+
+	assert convert_date_string(date) <= convert_date_string(today_date()), "O argumento 'date' precisa ser uma data no passado"
+
+	return time_delta(date, today_date(), string_format=string_format, output_info='anos')
+
+
+def days_to(date, string_format='pt-br'):
+	"""Retorna um inteiro com a quantidade de dias até a data especificada
+	
+	Arguments:
+		date {string} -- data futura a ser verificada
+	
+	Keyword Arguments:
+		string_format {string} -- informa a convenção da localidade (default: {'pt-br'})
+	
+	Returns:
+		{int} -- número de dias
+	"""
+
+	assert convert_date_string(date) >= convert_date_string(today_date()), "O argumento 'date' precisa ser uma data no futuro"
+
+	return time_delta(date, today_date(), string_format=string_format, output_info='dias') * -1
 
 
 def add_list_elements(lista):
