@@ -9,7 +9,7 @@ import io
 import os
 import pickle
 
-from modules.cli_tools import list_col_responses, dict_from_table, select_ops, branco, amarelo, vermelho
+from cli_tools import list_col_responses, dict_from_table, select_ops, branco, amarelo, vermelho
 
 
 def read_pickle(obj_file, folder='.'):
