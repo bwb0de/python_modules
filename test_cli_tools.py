@@ -4,10 +4,12 @@
 import os
 
 from cli_tools import *
+from py_obj_data_tools import *
+from py_pickle_handlers import *
+
 from pytest import fixture, raises
 
 dictionary = {'Daniel': 22, 'Lara': [33, 88, 56], 'Joana': [[40, 67, 86], [13, 15]]}
-
 
 test_data_folder = ".test_data/"
 
@@ -302,3 +304,15 @@ def test_seek_for_lines():
     assert seek_for_lines("txt_table.txt", "nome", "Vicente", file_folder=test_data_folder, delimiter=":")[0]['escolaridade'] == 'Pré-escola'
     assert len(seek_for_lines("txt_table.txt", "familia", "Cruz", file_folder=test_data_folder, delimiter=":")) == 4
     assert len(seek_for_lines("txt_table.txt", "familia", "Silva", file_folder=test_data_folder, delimiter=":")) == 2
+
+
+def test_history_table():
+    data_hoje = today_date()
+    atd = HistoryTable(target_folder='/tmp', filename='atd', fieldnames=['atd', 'mat'], map_fields=['data_registro', 'mat'])
+    atd.append({'atd': 'Entrevista', 'mat': '1233-098098'})
+    atd.append({'atd': 'Entrevista', 'mat': '1333-038798'})
+    atd.append({'atd': 'Entrevista', 'mat': '5233-088098'})
+    atd.append({'atd': 'Estudo socioeconômico', 'mat': '1233-098098'})
+    del(atd)
+    atd2 = read_pickle('atd', folder='/tmp')
+    assert atd2.filter('1233-098098', return_value=True) == [[data_hoje, 'Entrevista', '1233-098098'], [data_hoje, 'Estudo socioeconômico', '1233-098098']]
