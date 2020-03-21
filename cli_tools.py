@@ -15,6 +15,7 @@ import tempfile
 import time
 import re
 import datetime
+import heapq
 
 from colored import fg, bg, attr
 from subprocess import getoutput
@@ -22,6 +23,7 @@ from random import randrange, randint
 from string import whitespace, punctuation, digits
 from collections import OrderedDict
 from copy import copy
+
 
 from decorators import only_tuple_and_list
 
@@ -92,6 +94,76 @@ class ExtendedDict(OrderedDict):
             self[key] = [value]
         else:
             self[key].append(value)
+
+
+class Stack():
+	def __init__(self, list_of_elements):
+		assert isinstance(list_of_elements, list)
+		self.stack = []
+
+	def push(self, item):
+		self.stack.append(item)
+
+	def pull(self):
+		if self.size() != 0:
+			return self.stack.pop()
+
+	def peek(self):
+		if self.size() != 0:
+			return self.stack[-1]
+
+	def size(self):
+		return len(self.stack)
+
+
+
+class Queue():
+	def __init__(self, list_of_elements):
+		assert isinstance(list_of_elements, list)
+		self.queue = list_of_elements
+
+	def __repr__(self):
+		output = str(self.queue).replace('[', '««').replace(']', '««')
+		return output
+
+	def enqueue(self, item):
+		self.queue.append(item)
+
+	def dequeue(self):
+		if self.size() != 0:
+			return self.queue.pop(0)
+
+	def peek(self):
+		if self.size() != 0:		
+			return self.queue[0]
+
+	def size(self):
+		return len(self.queue)
+
+
+class Heap():
+	def __init__(self, list_of_elements):
+		assert isinstance(list_of_elements, list)
+		self.heap = []
+		for element in list_of_elements:
+			self.push(element)
+
+	def push(self, element):
+		return heapq.heappush(self.heap, element)
+
+	def pull(self):
+		if self.size() != 0:
+			return heapq.heappop(self.heap)
+
+	def peek(self):
+		if self.size() != 0:		
+			return self.heap[0]
+
+	def size(self):
+		return len(self.heap)
+	
+
+
 
 
 def create_lockfile(filename):
@@ -585,7 +657,7 @@ def create_reference_table(num_of_cols=0, zeros=False):
 	return output
 
 
-def print_numeric_matrix(matrix_iterator, translator=False, col_wid=False, return_value=False):
+def print_numeric_matrix(matrix_iterator, translator=False, col_wid=False, return_value=False, output_format='string'):
 	"""Imprime uma matrix de inteiros reconvertida conforme as referencias apresentadas em 'translator'
 	
 	Arguments:
@@ -599,23 +671,39 @@ def print_numeric_matrix(matrix_iterator, translator=False, col_wid=False, retur
 	Returns:
 		{string} -- se 'return_value' for True, retorna a string da tabela
 	"""
+	if output_format == 'string':
+		output = ''
 	
-	output = ''
+	elif output_format == 'list':
+		output = []
 	
 	for list_obj in matrix_iterator:
 		n = itertools.count()
-		line = ""
+		
+		if output_format == 'string':
+			line = ""
+		elif output_format == 'list':
+			line = []
+
 		for cell in list_obj:
 			if translator:
 				col_idx = next(n)
-				if col_wid:
-					line += translator[col_idx][cell].ljust(col_wid[col_idx])
-				else:
-					line += translator[col_idx][cell]
+				
+				if output_format == 'string':
+					if col_wid:
+						line += translator[col_idx][cell].ljust(col_wid[col_idx])
+					else:
+						line += translator[col_idx][cell]
+				elif output_format == 'list':
+					line.append(translator[col_idx][cell])
+
 		if not return_value:
 			print(line)
 		else:
-			output += line + os.linesep
+			if output_format == 'string':
+				output += line + os.linesep
+			elif output_format == 'list':
+				output.append(line)
 	
 	if return_value:
 		return output
