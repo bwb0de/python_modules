@@ -179,6 +179,26 @@ class UnicListFile(UnicOrderedList, PickleDataType):
 
 
 class HistoryTable(PickleDataType):
+    """Tabela histórico. Tabela para armazenamento de informações com objetivo de minimizar redundância e permitir filtragem rápida de valores.
+    
+    Atributos:
+        target_folder {string} -- pasta onde o arquivo será salvo
+        filename {string} -- nome do arquivo a ser salvo
+        fieldnames {list} -- lista com o nome das colunas da tabela
+        fieldnames_idx {dict} -- dicionário com index de referencia para cada coluna nominal de 'self.fieldnames'
+        fieldnames_mapping {ExtendedDict} -- dicionário com indicação das linhas onde estão situados um dado valor
+        fieldnames_to_map {list} -- lista com o nome das colunas que terão seus valores mapeados
+        matrix {list_of_lists} -- matriz numérica onde os dados da tabela serão efetivamente armazenados como números
+        col_wid {list} -- lista de inteiros com a largura das colunas a ser usada quando tabela for impressa
+        referense_table {list_of_dicts} -- lista dicionários contendo a referencia entre o valor de um campo específico (geralmente string) e o inteiro a ser registrado na respectiva coluna da matrix
+        reversed_reference_table {list_of_dicts} -- lista de dicionários para tradução da matrix, usada para restabelecer os valores originais quando a tabela for impressa
+        
+
+    Methods:
+        append -- adiciona informações na tabela, o argumento deve ser do tipo 'dict'
+        filter -- imprime as linhas corespondentes ao valor filtrado
+    
+    """
     def __init__(self, target_folder=False, filename=False, fieldnames=False, map_fields=False):
         super(HistoryTable, self).__init__()
         self.target_folder = target_folder
@@ -215,9 +235,20 @@ class HistoryTable(PickleDataType):
             if isinstance(map_fields, bool):
                 self.fieldnames_to_map = pick_options(self.fieldnames, input_label="Selecione as colunas a serem mapeadas", max_selection=len(self.fieldnames))
             else:
-                assert isinstance(fieldnames, (list, tuple)), "Argumento 'map_fields', deve ser do tipo 'list' ou 'tuple'"
+                assert isinstance(map_fields, (list, tuple)), "Argumento 'map_fields', deve ser do tipo 'list' ou 'tuple'"
                 self.fieldnames_to_map = map_fields 
 
+
+    def filter(self, value, return_value=False):
+        output = []
+        
+        for line in self.fieldnames_mapping[value]:
+            output.append(self.matrix[line])
+        
+        if return_value:
+            return print_numeric_matrix(output, translator=self.reversed_reference_table, col_wid=self.col_wid, return_value=return_value, output_format='list')
+        else:
+            return print_numeric_matrix(output, translator=self.reversed_reference_table, col_wid=self.col_wid, return_value=return_value, output_format='string')
 
     def append(self, dictionary):
         """Adiciona linha à tabela
@@ -251,5 +282,7 @@ class HistoryTable(PickleDataType):
         self.persist()
     
 
-atendimentos = HistoryTable(target_folder='/tmp', filename='Atendimentos.sps', fieldnames=['identificador', 'tipo_atd'], map_fields=['identificador'])
+class HistoryTasks(HistoryTable):
+    pass
+
 
