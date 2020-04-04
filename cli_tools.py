@@ -29,9 +29,9 @@ from decorators import only_tuple_and_list
 
 tmp_folder = tempfile.gettempdir()
 
-class UnicOrderedList(list):
+class PK_LinkedList(list):
     def __init__(self, iterator=()):
-        super(UnicOrderedList, self).__init__(iterator)
+        super(PK_LinkedList, self).__init__(iterator)
         self.sorted = False
 
     def __sub__(self, other):
@@ -39,11 +39,28 @@ class UnicOrderedList(list):
             self.remove(element)
         return self
 
-    def __str__(self):
-        output = ""
-        for element in self:
-            output += ' -' + element + '\n'
-        return output
+    def append(self, element):
+        if self.index(element) != None:
+            print("Item já está na lista...")
+            return
+
+        super(PK_LinkedList, self).append(element)
+
+    def index(self, element, self_list_nfo=False):
+        check_element = bisect_search_idx(element, self, (0, len(self)))
+        if not isinstance(check_element, bool): return check_element
+        else: return None
+
+
+class PK_OrderedLinkedList(list):
+    def __init__(self, iterator=()):
+        super(PK_OrderedLinkedList, self).__init__(iterator)
+        self.sorted = False
+
+    def __sub__(self, other):
+        for element in other:
+            self.remove(element)
+        return self
 
     def append(self, element):
         if self.index(element) != None:
@@ -58,7 +75,7 @@ class UnicOrderedList(list):
         except IndexError:
             self.sorted = True
         
-        super(UnicOrderedList, self).append(element)
+        super(PK_OrderedLinkedList, self).append(element)
 
         if not self.sorted:
             self.sort()
@@ -70,7 +87,7 @@ class UnicOrderedList(list):
             
             
 
-class ExtendedDict(OrderedDict):
+class ColisionDict(OrderedDict):
     def __add__(self, other):
         if len(self) > len(other):
             iterated_dict = other.items()
@@ -460,7 +477,7 @@ def create_col_index(iterator):
 
 	assert isinstance(iterator, (tuple, list)), "Iterador não suportado, utilizar 'tuple' ou 'list' como argumento."
 
-	output = ExtendedDict()
+	output = ColisionDict()
 
 	n = itertools.count()
 

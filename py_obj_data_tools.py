@@ -13,7 +13,7 @@ from collections import OrderedDict
 
 from cli_tools import strip_simbols, strip_spaces, verde, amarelo, select_op, limpar_tela, branco, amarelo, vermelho, read_input
 from cli_tools import bisect_search_idx, create_col_index, string_table_to_int_matrix, create_reference_table, print_numeric_matrix, pick_options, today_date
-from cli_tools import ExtendedDict, UnicOrderedList
+from cli_tools import ColisionDict, PK_LinkedList
 
 import py_pickle_handlers as pk
 
@@ -156,18 +156,14 @@ class Form(PickleDataType):
 
 
 
-
-
-
-
-class FileIndexDict(ExtendedDict, PickleDataType):
+class FileIndexDict(ColisionDict, PickleDataType):
     def __init__(self):
         super(FileIndexDict, self).__init__()
         self.target_folder = False
         self.filename = False
 
 
-class UnicListFile(UnicOrderedList, PickleDataType):
+class UnicListFile(PK_LinkedList, PickleDataType):
     def __init__(self, target_folder=False, filename=False):
         super(UnicListFile, self).__init__()
         self.target_folder = target_folder
@@ -186,7 +182,7 @@ class HistoryTable(PickleDataType):
         filename {string} -- nome do arquivo a ser salvo
         fieldnames {list} -- lista com o nome das colunas da tabela
         fieldnames_idx {dict} -- dicionário com index de referencia para cada coluna nominal de 'self.fieldnames'
-        fieldnames_mapping {ExtendedDict} -- dicionário com indicação das linhas onde estão situados um dado valor
+        fieldnames_mapping {ColisionDict} -- dicionário com indicação das linhas onde estão situados um dado valor
         fieldnames_to_map {list} -- lista com o nome das colunas que terão seus valores mapeados
         matrix {list_of_lists} -- matriz numérica onde os dados da tabela serão efetivamente armazenados como números
         col_wid {list} -- lista de inteiros com a largura das colunas a ser usada quando tabela for impressa
@@ -204,7 +200,7 @@ class HistoryTable(PickleDataType):
         self.target_folder = target_folder
         self.filename = filename
         self.__set_fieldnames__(fieldnames)
-        self.fieldnames_mapping = ExtendedDict()
+        self.fieldnames_mapping = ColisionDict()
         self.fieldnames_to_map = []
         self.__set_mapping__(map_fields)
         self.fieldnames_idx = create_col_index(self.fieldnames)
