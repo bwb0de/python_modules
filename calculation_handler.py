@@ -6,7 +6,7 @@
 
 
 from collections import Counter, OrderedDict
-from cli_tools import create_col_labels, split_and_strip, print_list, sim_ou_nao, create_line_index, pick_options
+from cli_tools import create_col_labels, split_and_strip, print_list, sim_ou_nao, create_line_index, pick_options, try_implict_convert
 
 
 
@@ -36,7 +36,7 @@ def sum(lista, key=lambda x: x):
 
 
 
-def count_values(iterator, delimiter=False, select=False):
+def map_values(iterator, delimiter=False, select=False, count=False):
     """Conta a quantidade de respostas das colunas de uma tabela
     
     Arguments:
@@ -89,16 +89,37 @@ def count_values(iterator, delimiter=False, select=False):
 
     output = OrderedDict()
 
-    for col in selected_cols:
-        output[col] = Counter()
+    if count:
+        for col in selected_cols:
+            output[col] = Counter()
 
-        if isinstance(iterator[0], dict):
-            for line in iterator_data:
-                output[col].update([line[col]])
+            if isinstance(iterator[0], dict):
+                for line in iterator_data:
+                    value = try_implict_convert(line[col])
+                    output[col].update([value])
 
-        else:
-            for line in iterator_data:
-                output[col].update([line[fileds_index_map[col]]])
+            else:
+                for line in iterator_data:
+                    value = try_implict_convert(line[fileds_index_map[col]])
+                    output[col].update([value])
+    
+    else:
+        for col in selected_cols:
+            output[col] = {}
+
+            if isinstance(iterator[0], dict):
+                for line in iterator_data:
+                    if not output[col].get(line[col]):
+                        value = try_implict_convert(line[col])
+                        output[col][value] = True
+                output[col] = tuple(output[col].keys())
+
+            else:
+                for line in iterator_data:
+                    if not output[col].get(line[fileds_index_map[col]]):
+                        value = try_implict_convert(line[fileds_index_map[col]])
+                        output[col][value] = True
+                output[col] = tuple(output[col].keys())
 
     return output
 
@@ -117,7 +138,7 @@ def calculate_relative_freq(iterator, delimiter=False, select=False):
         {dict} -- dicionário com valores tabulados conforme as colunas da tabela
     """
 	
-    absolute_freq = count_values(iterator, delimiter=False, select=False)
+    absolute_freq = map_values(iterator, delimiter=False, select=False, count=True)
 
     for col in absolute_freq:
         sigma_col = 0
