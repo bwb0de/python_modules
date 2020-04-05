@@ -349,21 +349,28 @@ def days_to(date, string_format='pt-br'):
 	return time_delta(date, today_date(), string_format=string_format, output_info='dias') * -1
 
 
-def add_list_elements(lista):
+
+def sum(lista, key=lambda x: x):
 	"""Adiniona os elementos de uma lista numérica
 	
 	Arguments:
 		lista {list|tuple} -- lista com números a serem adicionados
-	
+
+	Keyword Arguments:
+		key {function} -- função para indicar atributo a ser somado em elementos complexos
+
 	Returns:
 		{int|float} -- resultado da soma entre os elementos
 	"""
 
 	assert isinstance(lista, (list, tuple)), "Argumento deve ser do tipo 'list' ou 'tuple'"
+	assert callable(key), "Argumento 'key' deve ser uma função"
 
 	output = 0
+
 	for item in lista:
-		output += item
+		output += key(item)
+
 	return output
 
 
@@ -1560,15 +1567,18 @@ def print_list_of_dict_as_table(list_of_dicts, col_space=2):
 
 
 
-def print_list(iterator):
+def print_list(iterator, key=lambda x: x):
 	"""Imprime os elementos de uma lista
-	
+
 	Arguments:
 		iterator {list|tuple|iterator} -- objeto de entrada
 	"""
-	
-	for element in iterator:
-		print(element)
+	assert isinstance(iterator, (list, tuple)), "Argumento deve ser do tipo 'list' ou 'tuple'"
+	assert callable(key), "Argumento 'key' deve ser uma função"
+
+	for item in iterator:
+		print(key(item))
+
 
 
 def load_data_file(filename, file_folder=os.curdir, delimiter='\t', lineterminator='\n', filemimetype='csv'):
@@ -1601,7 +1611,18 @@ def load_data_file(filename, file_folder=os.curdir, delimiter='\t', lineterminat
 
 
 def save_data_file(data, filename, file_folder=os.curdir, delimiter='\t', lineterminator='\n', filemimetype='csv'):
-
+	"""Função genérica para salvar dados, chama as funções específicas de escrita conforme o tipo de arquivo definido.
+	
+	Arguments:
+		data {table|list_of_dicts} -- variável com os dados a serem inseridos.
+		filename {string} -- nome do arquivo de destino.
+	
+	Keyword Arguments:
+		file_folder {string} -- pasta onde o arquivo será gravado (default: {os.curdir})
+		delimiter {str} -- delimitador de campo/colunas, necessário para arquivos 'txt' e 'csv' (default: {'\t'})
+		lineterminator {str} -- caractere de final de linha (default: {'\n'})
+		filemimetype {str} -- extensão do arquivo de entrata (default: {'csv'})
+	"""
 	assert filemimetype in ('csv', 'json', 'txt'), "Os únicos valores válidos para 'filemimetype' são: 'csv', 'json' ou 'txt'"
 
 	if filemimetype == 'csv':
@@ -1615,8 +1636,19 @@ def save_data_file(data, filename, file_folder=os.curdir, delimiter='\t', linete
 
 
 
-def load_data_file_fields():
-	pass
+def load_data_file_fields(filemimetype):
+
+	assert filemimetype in ('csv', 'json', 'txt'), "Os únicos valores válidos para 'filemimetype' são: 'csv', 'json' ou 'txt'"
+
+	if filemimetype == 'csv':
+		pass
+
+	elif filemimetype == 'json':
+		pass
+
+	elif filemimetype == 'txt':
+		pass
+
 
 
 def seek_for_lines(filename, col, value, file_folder=os.curdir, filemimetype="csv", delimiter='\t', lineterminator='\n', extract=False, show_data=True):
@@ -1708,65 +1740,56 @@ def copy_col(filename, source_col, destination_col, file_folder=os.curdir, filem
 
 
 
-#### Refatorar
-def add_line(filename, refcols=[]):
-	conteudo = load_full_csv(filename)
-	cols = load_csv_head(filename)
-	nova_linha = OrderedDict()
-	for c in cols:
-		v = input(c+": ")
-		nova_linha[c] = v
+def add_line_to_csv_table(filename, file_folder=os.curdir, translator={}, delimiter='\t', lineterminator='\n'):
+	"""Adiciona valores em um arquivo CSV coluna à coluna. Se houver um dicionário como argumento 'translator', o nome das colunas poderão ser ampliados como questões de um formulário.
+	
+	Arguments:
+		filename {string} -- nome do arquivo de dados em que a linha deve ser inserida
+	
+	Keyword Arguments:
+		file_folder {string} -- nome da pasta onde o arquivo está localizado (default: {os.curdir})
+		translator {dict} -- arquivo para exibição/explicação detalhada das colunas (default: {{}})
+		delimiter {string} -- delimitador de campo do arquivo CSV (default: {'\t'})
+		lineterminator {string} -- delimitador de linha (default: {'\n'})
+	"""
+	
+	while True:
+		conteudo = load_full_csv(filename, file_folder=file_folder, delimiter=delimiter, lineterminator=lineterminator)
+		columms = load_csv_head(filename, file_folder=file_folder, delimiter=delimiter, lineterminator=lineterminator)
+		nova_linha = OrderedDict()
+
+		for col in columms:
+			if translator.get(col):
+				new_value = read_input(input_label=translator[col])
+			else:
+				new_value = read_input(input_label=col)
+			nova_linha[col] = new_value
+			
+		conteudo.append(nova_linha)
+
+		save_csv(conteudo, filename, )
+
+		op = sim_ou_nao(input_label="Adicionar outro? (s/n)")
+		if op == "s": break
+
+
+
+def convert_csv_type(filename, old_delimiter, new_delimiter, file_folder=os.curdir, old_lineterminator=os.linesep, new_lineterminator=os.linesep):
+	"""Converte os tipos de delimitadores de campo e linhas de um arquivo CSV.
+	
+	Arguments:
+		filename {string} -- nome do arquivo CSV que será modificado
+		old_delimiter {string} -- antigo delimitador de campo
+		new_delimiter {string} -- novo delimitador de campo
+	
+	Keyword Arguments:
+		old_lineterminator {string} -- antigo delimitador de linha (default: {os.linesep})
+		new_lineterminator {string} -- novo delimitador de linha (default: {os.linesep})
+	"""
 		
-	conteudo.append(nova_linha)
-	save_csv(conteudo, filename)
-	v = input("Adicionar outro? (s/n) ")
-	if v == "s" or v == "S":
-		add_line(filename)
-
-
-#### Refatorar
-def convert_csv_type(filename, old_delimiter, new_delimiter, old_lineterminator=os.linesep, new_lineterminator=os.linesep):
 	conteudo = load_csv(filename, delimiter=old_delimiter, lineterminator=old_lineterminator)
 	save_csv(conteudo, filename, delimiter=new_delimiter, lineterminator=new_lineterminator)
 
-
-#### Refatorar
-
-
-#### Refatorar
-def listagem_cli(linhas_selecionadas, cols):
-	visual_count = len(linhas_selecionadas)
-	for linha in linhas_selecionadas:
-		visual_nfo = ""
-		w = 0
-		li = ""
-		linha_sem_quebra = True
-		for col in cols:
-			if linha.get(col[0]):
-				li += linha[col[0]].ljust(col[1])
-				if linha[col[0]].find(';') == -1:
-					w += col[1]
-				else:
-					linha_sem_quebra = False
-					lii = li.split(';')
-					if len(lii) > 1:
-						pri = True
-						for i in lii:
-							if pri == True:
-								visual_nfo += i + os.linesep
-								pri = False
-							else:
-								visual_nfo += "".ljust(w-1) + i + os.linesep
-								yield visual_nfo
-			else:
-				li += "".ljust(col[1])
-
-		
-		if linha_sem_quebra == True:
-			visual_nfo += li 
-			yield visual_nfo
-	
-	yield "Total: {}".format(visual_count)
 
 
 #### Refatorar
