@@ -6,7 +6,7 @@
 from os import system as sh
 from sys import platform
 
-def limpar():
+def clear():
 	if platform == 'win32':
 		r = sh('cls')
 	else:
@@ -14,9 +14,9 @@ def limpar():
 
 
 
-def limpar_a_tela(func):
+def clear_screen(func):
 	def wrapper(*args, **kargs):
-		limpar()
+		clear()
 		return func(*args, **kargs)
 	return wrapper
 
