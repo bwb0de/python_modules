@@ -12,20 +12,18 @@ import pickle
 import json
 import csv
 import tempfile
-import time
-import re
-import datetime
 import heapq
+import re
 
 from colored import fg, bg, attr
 from subprocess import getoutput
 from random import randrange, randint
 from string import whitespace, punctuation, digits
-from collections import OrderedDict
+from collections import OrderedDict, Counter
 from copy import copy
 
 
-from decorators import only_tuple_and_list
+from decorators import clear_screen
 
 tmp_folder = tempfile.gettempdir()
 
@@ -140,7 +138,7 @@ class Queue():
 		self.queue = list_of_elements
 
 	def __repr__(self):
-		output = str(self.queue).replace('[', '««').replace(']', '««')
+		output = str(self.queue).replace('[', '«« ').replace(']', ' ««')
 		return output
 
 	def enqueue(self, item):
@@ -181,8 +179,6 @@ class Heap():
 	
 
 
-
-
 def create_lockfile(filename):
 	"""Cria um arquivo vazio na pasta temporária para servir como trava
 	
@@ -193,6 +189,8 @@ def create_lockfile(filename):
 	f = open(tmp_folder+os.sep+filename,'w')
 	f.close()
 
+
+
 def remove_lockfile(filename):
 	"""Remove o arquivo alvo da pasta temporária
 	
@@ -201,6 +199,8 @@ def remove_lockfile(filename):
 	"""
 
 	os.remove(tmp_folder+os.sep+filename)
+
+
 
 def lockfile_name(path_to_file):
 	"""Adciona um prefixo padrão a um arquivo alvo para criar um nome ao arquivo de trava
@@ -227,151 +227,6 @@ def list_folder(folder):
 		{list} -- lista com os nomes dos arquivos presentes na pasta
 	"""
 	return os.listdir(os.getcwd()+os.sep+folder)
-
-
-def convert_date_string(s, string_format='pt-br'):
-	"""Converte uma string de data para um objeto 'datetime.datetime'
-	
-	Arguments:
-		s {string} -- data em formato de string
-	
-	Keyword Arguments:
-		string_format {string} -- faz a conversão conforme as convenções da localidade (default: {'pt-br'})
-	
-	Returns:
-		{datetime.datetime} -- objeto 'datetime.datetime' para operações matemáticas com data
-	"""
-	if string_format == 'pt-br':
-		return datetime.datetime.fromtimestamp(time.mktime(time.strptime(s, "%d/%m/%Y")))
-	elif string_format == 'us':
-		return datetime.datetime.fromtimestamp(time.mktime(time.strptime(s, "%m/%d/%Y")))
-	elif string_format == 'ISO':
-		return datetime.datetime.fromtimestamp(time.mktime(time.strptime(s, "%Y-%m-%d")))
-
-
-def create_period_pair(start_date, end_date, string_format='pt-br'):
-	"""Recebe uma data de inínio e fim e retorna uma tupla com os respectivos 'datetime.datetime' representando o período
-
-	Arguments:
-		start_date {string} -- data de início do período
-		end_date {string} -- data de fim do período
-
-	Keyword Arguments:
-		string_format {string} -- faz a conversão conforme as convenções da localidade (default: {'pt-br'})
-
-	Returns:
-		{tuple} -- tupla com dois objetos 'datetime.datetime'
-	"""
-
-	start_dt = convert_date_string(start_date, string_format=string_format)
-	end_dt = convert_date_string(end_date, string_format=string_format)
-	return (start_dt, end_dt)
-
-
-def time_delta(start_date, end_date, string_format='pt-br', output_info='dias'):
-	"""Calcula a variação de tempo, em dias, entre duas datas
-
-	Arguments:
-		start_date {string} -- data de início
-		end_date {string} -- data de fim
-
-	Keyword Arguments:
-		string_format {string} -- informa a convenção da localidade para conversão da data (default: {'pt-br'})
-
-	Returns:
-		{int} -- número de dias entre a data de início e fim
-		{float} -- número de anos entre a data de início e fim
-	"""
-	if isinstance(start_date, str) and  isinstance(end_date, str):
-		period = create_period_pair(start_date, end_date)
-	else:
-		period = (start_date, end_date)
-
-	if output_info == 'dias':
-		return (period[1] - period[0]).days
-	
-	elif output_info == 'anos':
-		return (period[1] - period[0]).days / 365
-
-
-
-def today_date(string_format='pt-br'):
-	"""Retorna uma string com a data do dia
-	
-	Keyword Arguments:
-		string_format {string} -- informa a convenção da localidade para formatação da string (default: {'pt-br'})
-	
-	Returns:
-		{string} -- data correspondente ao dia vigente
-	"""
-
-	if string_format == 'pt-br':
-		return time.strftime('%d/%m/%Y', time.gmtime())
-	elif string_format == 'us':
-		return time.strftime('%m/%d/%Y', time.gmtime())
-	elif string_format == 'ISO':
-		return time.strftime('%Y-%m-%d', time.gmtime())
-
-
-def years_since(date, string_format='pt-br'):
-	"""Retorna um float com a diferença em anos desde a data especificada
-	
-	Arguments:
-		date {string} -- data passada a ser verificada
-	
-	Keyword Arguments:
-		string_format {string} -- informa a convenção da localidade da string (default: {'pt-br'})
-	
-	Returns:
-		{float} -- número representando a distancia em anos desde a data especificada
-	"""
-
-	assert convert_date_string(date) <= convert_date_string(today_date()), "O argumento 'date' precisa ser uma data no passado"
-
-	return time_delta(date, today_date(), string_format=string_format, output_info='anos')
-
-
-def days_to(date, string_format='pt-br'):
-	"""Retorna um inteiro com a quantidade de dias até a data especificada
-	
-	Arguments:
-		date {string} -- data futura a ser verificada
-	
-	Keyword Arguments:
-		string_format {string} -- informa a convenção da localidade (default: {'pt-br'})
-	
-	Returns:
-		{int} -- número de dias
-	"""
-
-	assert convert_date_string(date) >= convert_date_string(today_date()), "O argumento 'date' precisa ser uma data no futuro"
-
-	return time_delta(date, today_date(), string_format=string_format, output_info='dias') * -1
-
-
-
-def sum(lista, key=lambda x: x):
-	"""Adiniona os elementos de uma lista numérica
-	
-	Arguments:
-		lista {list|tuple} -- lista com números a serem adicionados
-
-	Keyword Arguments:
-		key {function} -- função para indicar atributo a ser somado em elementos complexos
-
-	Returns:
-		{int|float} -- resultado da soma entre os elementos
-	"""
-
-	assert isinstance(lista, (list, tuple)), "Argumento deve ser do tipo 'list' ou 'tuple'"
-	assert callable(key), "Argumento 'key' deve ser uma função"
-
-	output = 0
-
-	for item in lista:
-		output += key(item)
-
-	return output
 
 
 
@@ -568,13 +423,13 @@ def check_table_type(iterator):
 
 		
 
-
-def ask_for_col_labels(num_of_cols, table_first_line, use_delimiter=True, delimiter='\t'):
+#Rever de forma a eliminar 'num_of_cols' e aceitar 'table' ao invés de 'first_line'...
+def create_col_labels(table, delimiter=False):
 	"""Retorna um dicionário com os nomes das colunas e indexes de referência
 	
 	Arguments:
 		num_of_cols {int} -- quantidade de colunas da tabela
-		table_first_line {table} -- matrix 1xN ou string com valores separados pelo delimitador
+		table {table} -- matrix 1xN ou string com valores separados pelo delimitador
 	
 	Keyword Arguments:
 		use_delimiter {bool} -- utiliza o delimitador no caso da amostra de dados ser uma string com delimitador (default: {True})
@@ -584,22 +439,24 @@ def ask_for_col_labels(num_of_cols, table_first_line, use_delimiter=True, delimi
 		{list} -- retorna uma lista
 	"""
 
-	assert isinstance(num_of_cols, int), "Número de colunas deve ser do tipo 'int'."
-	assert isinstance(table_first_line, (list, str, tuple)), "Linha da tabela deve ser 'list', 'tuple' ou 'str'."
+	assert isinstance(table, (list, tuple, str)), "A tabela deve ser do tipo 'list', 'tuple' ou 'str'"
 
-	output = []
-	n = itertools.count() 
-	
-	if use_delimiter: table_first_line = table_first_line.split(delimiter)
+	if isinstance(table[0], str):
+		assert delimiter != False, "O delimitador deve ser informado para tabelas com linhas em formato 'string'"
+		values = split_and_strip(table[0], delimiter=delimiter)
+		input(values)
 
-	while True:
-		idx = next(n)
-		print('Indique o nome da coluna que armazena o dado: {}'.format(table_first_line[idx]))
-		label = input(' :$')
-		output.append(label)
-		if len(output) == num_of_cols: break
+	elif isinstance(table[0], (list, tuple)):
+		values = table[0]
+
+	output_label_list = []
+	n = itertools.count()
+		
+	for value in values:
+		label = read_input(input_label='Indique o nome da coluna que armazena o dado: {}'.format(value))
+		output_label_list.append(label)
 	
-	return output
+	return output_label_list
 
 
 def string_table_to_int_matrix(iterator, reference_data=False, reversed_reference_data=False, delimiter='\t'):
@@ -803,7 +660,9 @@ def split_and_strip(text, delimiter='\t'):
 		{list} -- retorna uma lista com os elementos
 	"""
 
-	assert isinstance(text, str)
+	if not isinstance(text, str):
+		text = text[0]
+
 	assert isinstance(delimiter, str)
 	
 	output = text.split(delimiter)
@@ -1740,7 +1599,7 @@ def copy_col(filename, source_col, destination_col, file_folder=os.curdir, filem
 
 
 
-def add_line_to_csv_table(filename, file_folder=os.curdir, translator={}, delimiter='\t', lineterminator='\n'):
+def new_line_on_csv_file(filename, file_folder=os.curdir, translator={}, delimiter='\t', lineterminator='\n'):
 	"""Adiciona valores em um arquivo CSV coluna à coluna. Se houver um dicionário como argumento 'translator', o nome das colunas poderão ser ampliados como questões de um formulário.
 	
 	Arguments:
@@ -1767,10 +1626,10 @@ def add_line_to_csv_table(filename, file_folder=os.curdir, translator={}, delimi
 			
 		conteudo.append(nova_linha)
 
-		save_csv(conteudo, filename, )
+		save_csv(conteudo, filename, file_folder=file_folder)
 
 		op = sim_ou_nao(input_label="Adicionar outro? (s/n)")
-		if op == "s": break
+		if op == "n": break
 
 
 
@@ -1792,173 +1651,184 @@ def convert_csv_type(filename, old_delimiter, new_delimiter, file_folder=os.curd
 
 
 
-#### Refatorar
-def listagem_json(linhas_selecionadas, cols):
-	selected_cols = []
-	for linha in linhas_selecionadas:
-		l = {}
-		for col in cols:
-			l[col[0]] = linha[col[0]]
-		selected_cols.append(l)
-	return json.dumps(selected_cols, ensure_ascii=False, indent=4)
-
-
-#### Verificar diferenças com 'listar_dicionario'
-def show_dict_data(dictionary, output_filename=False):
-	'''Apenas retorna as chaves e os valores de um dicionário no formato de lista, obedecendo o layout "KEY » VALUE". '''
-	o = u''
-	for key in dictionary.keys():
-		o += key + ' »» ' + str(dictionary[key]) + '\n'
-		if type(dictionary[key]) == dict:
-			show_dict_data(dictionary[key])
+def print_dict(dictionary, indent=0, indent_incrementation=3):
+	"""Imprimie o conteúdo de um dicionário na tela
 	
-	if output_filename:
-		with open(output_filename, 'w') as f:# f = open(output_filename,'w')
-			f.write(o)
+	Arguments:
+		dictionary {dict|OrderedDict} -- dicionário a ser impresso
 	
-	print(o)
-
-
-
-#### Verificar diferenças com 'show_dict_data'
-def listar_dicionario(dicionario, cols, marcadores=[], tipo_output='cli'):
-	'''
-	Lista o conteúdo de um dicionário retornando uma tabela/string com colunas solicitadas.
-	O parametro 'cols' é uma lista de tuplas (t) em que t[0] é o 'id' e t[1] um número.
-	O número de t[1] representa a largura a ser definida para coluna id ou t[0].
-	Exibe ao final o total de elementos no dicionário.
-	'''
-
-	r = []
-	for linha in dicionario:
-		select_this = True
-		if marcadores != []:
-			select_this = False
-			try:
-				for m in marcadores:
-					if m in linha['marcador']:
-						select_this = True
-			except KeyError:
-				pass
-
-		if select_this == True:
-			r.append(linha)
-
-
-	if tipo_output == 'cli':
-		visual_nfo = listagem_cli(r, cols)
+	Keyword Arguments:
+		indent {int} -- valor inicial de edentação da raiz da árvore (default: {0})
+		indent_incrementation {int} -- valor a ser incrementada a cada novo nó (default: {3})
+	"""
 	
-	elif tipo_output == 'json':
-		visual_nfo = listagem_json(r, cols)
-
-	return visual_nfo
-
-#### Refatorar, transferir este recurso para 'py_functions_calculation'
-def obter_frq_abs_from_list_of_dicts(list_of_dicts, key=False):
-	'''
-	Retorna os diferentes valores existentes na chave 'key' para o 'list_of_dicts'.
-	Retorna o valor absoluto das ocorrências de valores.
-
-	'''
 	
-	#Assuming every dict on the list has the same structure...
-	fields = list_of_dicts[0].keys()
+	for key, value in dictionary.items():
+		if isinstance(value, (dict, OrderedDict)):
+			incremented_indent = indent + indent_incrementation
+			print(''.ljust(indent), key, ':')
+			print_dict(value, indent=incremented_indent, indent_incrementation=indent_incrementation)
+		else:
+			print(''.ljust(indent), key, ':', value)
+		
 
 
-	if key != False:
-		selected_cols = [key]
+def check_table_atributes(table, select=False, delimiter=False):
+	if isinstance(table[0], dict):
+		fields = list(table[0].keys())
+		table_data = table
+		line_type = 'dict'
+
+	elif isinstance(table[0], str):
+		assert delimiter != False
+		fields = split_and_strip(table, delimiter)
+		print_list(fields)
+		op = sim_ou_nao(input_label="Estes valores são os nomes corretos das colunas?")
+		if op == 'n': 
+			fields = create_col_labels([fields], delimiter=delimiter)
+			table_data = table
+		else:
+			table_data = table[1:]
+		line_type = 'str'
+
 	else:
-		selected_cols = select_ops(fields, 2)
+		print_list(table[0])
+		op = sim_ou_nao(input_label="Estes valores são os nomes corretos das colunas?")
+		if op == 'n':
+			fields = create_col_labels(table, delimiter=delimiter)
+			table_data = table
+		else:
+			fields = table[0]
+			table_data = table[1:]
+		line_type = 'list/tuple'
+
+	fields_index_map = create_line_index(fields)
+
+	selected_cols = fields
+	if select:
+		selected_cols = pick_options(fields, input_label="Selecione as colunas que devem ser tabuladas", max_selection=len(fields))
+
+
+	return table_data, line_type, selected_cols, fields_index_map
+
+
+
+@clear_screen
+def print_table_line_by_line(iterator, initial_index=0, delimiter=False, select=False):
+	"""Apresenta as informações de uma tabela bloco por bloco.
 	
-	o = OrderedDict()
+	Arguments:
+		iterator {table} -- massa e dados
 	
-	for f in selected_cols:
-		query_list = []
-		for line in list_of_dicts:
-			query_list.append(line[f])
-		query_list_entries = set(query_list)
-		for itens in query_list_entries:
-			o[itens]=query_list.count(itens)
-	return o
-
-
-#### Refatorar, transferir este recurso para 'py_functions_calculation'
-def obter_frq_abs_e_rel_from_list_of_dicts(list_of_dicts, key=False):
-	n = len(list_of_dicts)
-	r = obter_frq_abs_from_list_of_dicts(list_of_dicts, key)
-	o = OrderedDict()
-	for k in r.keys():
-		o[k] = (r[k], float((r[k]/n)*100.00))
-	return o
-
-#### Refatorar, transferir este recurso para 'py_functions_calculation'
-def make_complete_stat_from_list_of_dicts(list_of_dicts, printout=True):
-	fields = list_of_dicts[0].keys
-	o = OrderedDict()
-	for field in fields:
-		colcount = obter_frq_abs_e_rel_from_list_of_dicts(list_of_dicts, field)
-		o[field] = colcount
+	Keyword Arguments:
+		initial_index {int} -- posição/linha inicial a ser apresentada (default: {0})
+		delimiter {bool} -- delimitador de campo (default: {False})
+		select {bool} -- ativa/desativa seleção de colunas (default: {False})
+	"""
+	assert isinstance(iterator, (list, tuple))
+	assert isinstance(iterator[0], (list, tuple, dict, str))
 	
-	for k in o.keys():
-		print("Variável: "+k)
-		for v in o[k].keys():
-			print("  » "+v, o[k][v])
-		print("=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-="+os.linesep)
+	@clear_screen
+	def show_info_block(line_type):
+		if line_type == 'str':
+			for col in selected_cols:
+				print(col, ":", iterator_data[idx].split(delimiter)[fields_index_map[col]])
+			input("Pressione enter ver a linha seguinte...")
+		
+		elif line_type == 'dict':
+			for col in selected_cols:
+				print(col, ":", iterator_data[idx][col])
+			input("Pressione enter ver a linha seguinte...")
 
+		elif line_type == 'list/tuple':
+			for col in selected_cols:
+				print(col, ":", iterator_data[idx][fields_index_map[col]])
+			input("Pressione enter ver a linha seguinte...")
 
-#### Refatorar
-def map_values_in_list_of_dicts_col(list_of_dicts):
-	'''
-	Retorna os diferentes valores existentes na coluna 'col' para a 'tabela' do mysql selecionada.
-	'''
+	iterator_data, line_type, selected_cols, fields_index_map = check_table_atributes(iterator, select=select, delimiter=delimiter)
 
-	output = obter_frq_abs_from_list_of_dicts(list_of_dicts)
-	output = output.keys()
-	return output
-
-
-
-#### Refatorar e integrar a um recurso de listagem seletiva...
-def show_each_dict_in_block(list_of_dicts, print_fields, index_pos):
-	'''
-	Apresenta bloco de informações de um 'list_of_dicts'.
-	Apenas os campos definidos em 'print_fields' serão retornados.
-	A cada impressão o programa aquarda pelo comando para prosseguir.
-	Elementos iniciais da lista podem ser ignorados definindo-se o local de inicio 'index_pos'.
-	'''
-
-	for i in list_of_dicts[index_pos:]:
-		print_nfo = ""
-		for f in print_fields:
-			print_nfo += i[f].replace('/','') + os.linesep
-		print(print_nfo)
-		input("Pressione enter para continuar...")
+	for idx in range(initial_index, len(iterator_data)):
+		show_info_block(line_type)
 
 
 
-def join_list_of_dicts_intersection(list_of_dicts1, list_of_dicts2, joint_key):
-	'''
-	Realiza a junção de dois dicionários distintos que compartilhem uma mesma chave/col.
-	Retorna as linhas em que os valores da chave selecionada correspondem nos dois dicionários.
-	'''
+
+def table_junction(table1, table2, junction_col, select=False, delimiter=False):
+	"""Cria uma tabela a partir da união duas tabelas em que respostas da coluna selecionada coincidam
+	
+	Arguments:
+		table1 {table} -- variável com os dados da tabela 1
+		table2 {table} -- variável com os dados da tabela 2
+		junction_col {string} -- coluna de referência para junção
+	
+	Keyword Arguments:
+		select {bool} -- esta opção permite selecionar as colunas a serem cruzadas (default: {False})
+		delimiter {bool} -- opção necessária quando as lihas da tabela forem strings de texto com delimitadores (default: {False})
+	
+	Returns:
+		{list_of_dicts} -- lista de dicionários para fácil conversão em CSV ou JSON
+	"""
+	table1_data, table1_line_type, table1_selected_cols, table1_fields_index_map = check_table_atributes(table1, select=select, delimiter=delimiter)
+	table2_data, table2_line_type, table2_selected_cols, table2_fields_index_map = check_table_atributes(table2, select=select, delimiter=delimiter)
 
 	output = []
 	tmpdict = {}
-	for row in list_of_dicts1:
-		tmpdict[row[joint_key]] = row
-	list_of_dicts2_cols = list_of_dicts2[0].keys()
-	for other_row in list_of_dicts2:
-		if other_row[joint_key] in tmpdict: #tmpdict.has_key(other_row[col]):
-			joined_row = tmpdict[other_row[joint_key]]
-			for colz in list_of_dicts2_cols:
-				if colz != joint_key:
-					joined_row[colz] = other_row[colz]
-			output.append(joined_row)
+
+	for idx in range(0, len(table1_data)):
+		if table1_line_type == 'dict':
+			tmpdict[table1_data[idx][junction_col]] = table1_data[idx]
+
+		elif table1_line_type == 'str':
+			converted_line = {}
+			for col in table1_selected_cols:
+				converted_line[col] = table1_data[idx].split(delimiter)[table1_fields_index_map[col]]
+			tmpdict[converted_line[junction_col]] = converted_line
+			
+		elif table1_line_type == 'list/tuple':
+			converted_line = {}
+			for col in table1_selected_cols:
+				converted_line[col] = table1_data[idx][table1_fields_index_map[col]]
+			tmpdict[converted_line[junction_col]] = converted_line
+
+
+	for idx in range(0, len(table2_data)):
+		if table2_line_type == 'dict':
+			if table2_data[idx][junction_col] in tmpdict:
+				joined_line = tmpdict[table2_data[idx][junction_col]]
+				for col in table2_selected_cols:
+					if col != junction_col:
+						joined_line[col] = table2_data[idx][col]
+				output.append(joined_line)
+
+		elif table2_line_type == 'str':
+			converted_line = {}
+			for col in table2_selected_cols:
+				converted_line[col] = table2_data[idx].split(delimiter)[table2_fields_index_map[col]]
+			
+			if converted_line[junction_col] in tmpdict:
+				joined_line = tmpdict[converted_line[junction_col]]
+				for col in table2_selected_cols:
+					if col != junction_col:
+						joined_line[col] = converted_line[col]
+				output.append(joined_line)
+
+		elif table2_line_type == 'list/tuple':
+			converted_line = {}
+			for col in table2_selected_cols:
+				converted_line[col] = table2_data[idx][table2_fields_index_map[col]]
+			
+			if converted_line[junction_col] in tmpdict:
+				joined_line = tmpdict[converted_line[junction_col]]
+				for col in table2_selected_cols:
+					if col != junction_col:
+						joined_line[col] = converted_line[col]
+				output.append(joined_line)
+			
 	return output
 
 
 
-def join_list_of_dicts_union(list_of_dicts1, list_of_dicts2, joint_key):
+def table_merge(list_of_dicts1, list_of_dicts2, joint_key):
 	'''
 	Realiza a junção de dois dicionários distintos que compartilhem uma mesma chave/col.
 	Retorna as linhas em que os valores da chave selecionada correspondem nos dois dicionários.
