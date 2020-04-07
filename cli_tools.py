@@ -423,7 +423,7 @@ def check_table_type(iterator):
 
 		
 
-#Rever de forma a eliminar 'num_of_cols' e aceitar 'table' ao invés de 'first_line'...
+
 def create_col_labels(table, delimiter=False):
 	"""Retorna um dicionário com os nomes das colunas e indexes de referência
 	
@@ -1768,6 +1768,7 @@ def table_junction(table1, table2, junction_col, select=False, delimiter=False):
 	Returns:
 		{list_of_dicts} -- lista de dicionários para fácil conversão em CSV ou JSON
 	"""
+	
 	table1_data, table1_line_type, table1_selected_cols, table1_fields_index_map = check_table_atributes(table1, select=select, delimiter=delimiter)
 	table2_data, table2_line_type, table2_selected_cols, table2_fields_index_map = check_table_atributes(table2, select=select, delimiter=delimiter)
 
@@ -1885,75 +1886,102 @@ def table_merge(list_of_dicts1, list_of_dicts2, joint_key):
 
 
 
-def cruzar_variaveis(list_of_dicts):
-	arquivo_de_saida = input("Salvar resultado como...: ")
-	limpar_tela()
-	fields = list_of_dicts[0].keys()
-	selected_cols = select_ops(fields, 2)
-	selected_cols_len = len(selected_cols)
-	print("Selecionadas: ", selected_cols, selected_cols_len)
-	set_of_values = []
-	while selected_cols_len != 0:
-		col_values = []
-		for line in list_of_dicts:
-			col_values.append(line[selected_cols[selected_cols_len-1]])
-		set_of_values.append(set(col_values))
-		selected_cols_len -= 1
-	print("Valores encontrados: ", set_of_values)
-	o = OrderedDict()
-	set_of_values_len = []
-	for i in set_of_values:
-		set_of_values_len.append(len(i))
-	print("Número de valores diferentes: ", set_of_values_len)
+def cross_table_values(filename, overwrite_file=False, file_folder=os.curdir, delimiter='\t', lineterminator='\n'):
+	"""Esta função combina os valores de duas ou mais colunas para criar uma nova coluna com os valores combinados
+	
+	Arguments:
+		filename {string} -- arquivo CSV alvo.
+	
+	Keyword Arguments:
+		overwrite_file {bool} -- indica se o arquivo original deve ser sobregravado (default: {False})
+		file_folder {string} -- pasta onde o arquivo alvo está (default: {os.curdir})
+		delimiter {str} -- delimitador de campo (default: {'\t'})
+		lineterminator {str} -- delimitador de linha (default: {'\n'})
+	"""
 
-	r = []
-	if len(selected_cols) == 1:
-		print("É necessário escolher mais de uma coluna para efetuar o cruzamento...")
-	elif len(selected_cols) == 2:
-		for lines in list_of_dicts:
-			r.append(" e ".join([lines[selected_cols[0]],lines[selected_cols[1]]]))
-	elif len(selected_cols) == 3:
-		for lines in list_of_dicts:
-			r.append(" e ".join([lines[selected_cols[0]],lines[selected_cols[1]],lines[selected_cols[2]]]))
-	elif len(selected_cols) == 4:
-		for lines in list_of_dicts:
-			r.append(" e ".join([lines[selected_cols[0]],lines[selected_cols[1]],lines[selected_cols[2]],lines[selected_cols[3]]]))
-	elif len(selected_cols) == 5:
-		for lines in list_of_dicts:
-			r.append(" e ".join([lines[selected_cols[0]],lines[selected_cols[1]],lines[selected_cols[2]],lines[selected_cols[3]],lines[selected_cols[4]]]))
-	elif len(selected_cols) == 6:
-		for lines in list_of_dicts:
-			r.append(" e ".join([lines[selected_cols[0]],lines[selected_cols[1]],lines[selected_cols[2]],lines[selected_cols[3]],lines[selected_cols[4]],lines[selected_cols[5]]]))
-	elif len(selected_cols) == 7:
-		for lines in list_of_dicts:
-			r.append(" e ".join([lines[selected_cols[0]],lines[selected_cols[1]],lines[selected_cols[2]],lines[selected_cols[3]],lines[selected_cols[4]],lines[selected_cols[5]],lines[selected_cols[6]]]))
-	elif len(selected_cols) == 8:
-		for lines in list_of_dicts:
-			r.append(" e ".join([lines[selected_cols[0]],lines[selected_cols[1]],lines[selected_cols[2]],lines[selected_cols[3]],lines[selected_cols[4]],lines[selected_cols[5]],lines[selected_cols[6]],lines[selected_cols[7]]]))
-	elif len(selected_cols) == 9:
-		for lines in list_of_dicts:
-			r.append(" e ".join([lines[selected_cols[0]],lines[selected_cols[1]],lines[selected_cols[2]],lines[selected_cols[3]],lines[selected_cols[4]],lines[selected_cols[5]],lines[selected_cols[6]],lines[selected_cols[7]],lines[selected_cols[8]]]))
-	elif len(selected_cols) == 10:
-		for lines in list_of_dicts:
-			r.append(" e ".join([lines[selected_cols[0]],lines[selected_cols[1]],lines[selected_cols[2]],lines[selected_cols[3]],lines[selected_cols[4]],lines[selected_cols[5]],lines[selected_cols[6]],lines[selected_cols[7]],lines[selected_cols[8]],lines[selected_cols[9]]]))
+	assert isinstance(filename, str)
+	assert isinstance(overwrite_file, bool)
+
+	if not overwrite_file:
+		output_filename = read_input(input_label="Salvar resultado como")
 	else:
-		print("Quantidade máxima de cruzamentos atingida...")
+		output_filename = filename
 
-	r_set = set(r)
-	o = OrderedDict()
-	n = len(r)
+	table = load_full_csv(filename, file_folder=file_folder, delimiter=delimiter, lineterminator=lineterminator)
 
-	for i in r_set:
-		o[i] = (r.count(i), float((r.count(i)/n)*100))
+	if isinstance(table[0], dict):
+		fields = list(table[0].keys())
+		selected_cols = pick_options(fields, input_label="Selecione colunas que devem ser cruzadas", number_of_cols=1, max_selection=len(fields))
+		new_col_name = read_input(input_label="Nome da nova coluna a ser criada")
+		for line in table:
+			combined_data = []
+			for col in selected_cols:
+				combined_data.append(line[col])
+			combined_data = lexical_list_join(combined_data)
+			line[new_col_name] = combined_data
 
-	o_file_data = ''
-	for i in o.keys():
-		o_file_data += str(i) + "," + str(o[i][0]) + "," + str(o[i][1]) + os.linesep
-	f = open(arquivo_de_saida, 'w')
-	f.write(o_file_data)
-	f.close()
+	save_csv(table, filename=output_filename, file_folder=file_folder)
 
-	return o
+
+
+def simplify_table_values(filename, overwrite_file=False, file_folder=os.curdir, delimiter='\t', lineterminator='\n'):
+	"""Esta função simplifica os valores de uma determinada coluna pela substituição de um ou mais respostas anteriores por respostas arbitrárias definidas pelo analista
+	
+	Arguments:
+		filename {string} -- arquivo alvo que terá as informações manipuladas
+	
+	Keyword Arguments:
+		overwrite_file {bool} -- indica se o arquivo original deve ser substituído (default: {False})
+		file_folder {string} -- local onde o arquivo original está (default: {os.curdir})
+		delimiter {str} -- delimitador de campo (default: {'\t'})
+		lineterminator {str} -- delimitador de linha (default: {'\n'})
+	"""
+
+	def map_values(selected_col):
+		mapped_values = {}
+		for line in table:
+			if not mapped_values.get(line[selected_col]):
+				mapped_values[line[selected_col]] = True
+		return list(mapped_values.keys())
+
+
+	def conversion_rule(mapped_values):
+		conversion_dict = {}
+		while True:
+			new_value = read_input(input_label="Indique o valor que deverá substituir respostas anteriormente existentes")
+			selected_values = pick_options(mapped_values, input_label="Selecione os valores a serem substituídos", number_of_cols=1, max_selection=len(mapped_values))
+			for v in selected_values:
+				mapped_values.remove(v)
+				conversion_dict[v] = new_value
+			if len(selected_values) > 0:
+				op = sim_ou_nao(input_label="Simplificar outros valores? (s/n)")
+				if op == 'n': 
+					for v in mapped_values:
+						conversion_dict[v] = v
+					break
+		return conversion_dict
+
+	assert isinstance(filename, str)
+	assert isinstance(overwrite_file, bool)
+
+	if not overwrite_file:
+		output_filename = read_input(input_label="Salvar resultado como")
+	else:
+		output_filename = filename
+
+	table = load_full_csv(filename, file_folder=file_folder, delimiter=delimiter, lineterminator=lineterminator)
+
+	if isinstance(table[0], dict):
+		fields = list(table[0].keys())
+		selected_col = pick_options(fields, input_label="Selecione a colunas que devem ter os valores simplificados", number_of_cols=1, max_selection=1)
+		mapped_values = map_values(selected_col)
+		conversion_dict = conversion_rule(mapped_values)
+		new_col_name = read_input(input_label="Nome da nova coluna a ser criada")
+
+		for line in table:
+			line[new_col_name] = conversion_dict[line[selected_col]]
+
+	save_csv(table, filename=output_filename, file_folder=file_folder)
 
 
 
