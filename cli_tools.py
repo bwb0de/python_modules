@@ -111,13 +111,44 @@ class ColisionDict(OrderedDict):
             self[key].append(value)
 
 
+
+
 class Stack():
 	def __init__(self, list_of_elements):
 		assert isinstance(list_of_elements, list)
 		self.stack = []
+		self._stack_size = self.size() - 1
+		self._index = 0
+
+	def __iter__(self):
+		for element in self.stack:
+			yield self.__next__()
+
+	def __next__(self):
+		if self._stack_size > -1:
+			result = self.stack[self._stack_size]
+			self._stack_size -=1
+			return result
+		self._stack_size = self.size() - 1
+
+	def __len__(self):
+		return len(self.stack)
+
+	def __repr__(self):
+		self._stack_size = self.size() - 1
+		output = "top »» ["
+		while self._stack_size > -1:
+			if self._stack_size == 0:
+				output += '"' + str(self.stack[self._stack_size]) + '"]'
+			else:
+				output += '"' + str(self.stack[self._stack_size]) + '", '
+			self._stack_size -=1
+		self._stack_size = self.size() - 1
+		return output
 
 	def push(self, item):
 		self.stack.append(item)
+		self._stack_size = self.size() - 1
 
 	def pull(self):
 		if self.size() != 0:
@@ -136,9 +167,26 @@ class Queue():
 	def __init__(self, list_of_elements):
 		assert isinstance(list_of_elements, list)
 		self.queue = list_of_elements
+		self._queue_size = self.size() - 1
+		self._index = 0
+
+	def __iter__(self):
+		for element in self.queue:
+			yield self.__next__()
+
+	def __next__(self):
+		if self._index < self._queue_size:
+			result = self.queue[self._index]
+			self._index += 1
+			return result
+		self._index = 0
+
+	def __len__(self):
+		return len(self.queue)
+
 
 	def __repr__(self):
-		output = str(self.queue).replace('[', '«« ').replace(']', ' ««')
+		output = str(self.queue).replace('[', 'init «« ').replace(']', ' «« end')
 		return output
 
 	def enqueue(self, item):
