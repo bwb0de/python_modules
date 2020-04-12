@@ -4,22 +4,23 @@
 #
 
 
-import sys
+#import sys
 import itertools
 import os
-import io
-import pickle
+#import io
+#import pickle
 import json
 import csv
 import tempfile
 import heapq
 import re
+import time
 
-from colored import fg, bg, attr
+from colored import fg, attr#, bg
 from subprocess import getoutput
 from random import randrange, randint
 from string import whitespace, punctuation, digits
-from collections import OrderedDict, Counter
+from collections import OrderedDict#, Counter
 from copy import copy
 
 
@@ -498,7 +499,6 @@ def create_col_labels(table, delimiter=False):
 		values = table[0]
 
 	output_label_list = []
-	n = itertools.count()
 		
 	for value in values:
 		label = read_input(input_label='Indique o nome da coluna que armazena o dado: {}'.format(value))
@@ -1973,7 +1973,7 @@ def cross_table_values(filename, overwrite_file=False, file_folder=os.curdir, de
 
 
 def simplify_table_values(filename, overwrite_file=False, file_folder=os.curdir, delimiter='\t', lineterminator='\n'):
-	"""Esta função simplifica os valores de uma determinada coluna pela substituição de um ou mais respostas anteriores por respostas arbitrárias definidas pelo analista
+	"""Simplifica os valores de uma determinada coluna pela substituição de um ou mais respostas anteriores por respostas arbitrárias definidas pelo analista
 	
 	Arguments:
 		filename {string} -- arquivo alvo que terá as informações manipuladas
@@ -2034,23 +2034,24 @@ def simplify_table_values(filename, overwrite_file=False, file_folder=os.curdir,
 
 
 
-def get_indexes(item, lista):
-	'''
-	Retorna os índices de um elemento em uma lista. Usado em listas que possuam elementos repitidos.
-	'''
+def get_indexes(item, iterator):
+	"""Retorna os indices de um dado elemento em uma lista/tupla
+	
+	Arguments:
+		item {string} -- elemento a ser pesquisado
+        iterator {list|tuple} -- iterador onde o elemento será pesquisado
+	
+	Returns:
+        {tuple} - tupla com os indices onde o elemento solicitado está
+	"""
 
-	loops = lista.count(item)
-	r = []
-	idx = 0
-	while loops != 0:
-		try:
-			nidx = lista[idx:].index(item)
-			r.append(nidx+idx)
-			idx = nidx+1
-			loops -= 1
-		except ValueError:
-			break
-	return r
+
+    counter = itertools.count()
+    output = []
+    for element in lista:
+        idx = next(counter)
+        if element == item: output.append(idx) 
+	return tuple(output)
 
 
 
