@@ -2036,123 +2036,165 @@ def simplify_table_values(filename, overwrite_file=False, file_folder=os.curdir,
 
 def get_indexes(item, iterator):
 	"""Retorna os indices de um dado elemento em uma lista/tupla
-	
+
 	Arguments:
 		item {string} -- elemento a ser pesquisado
-        iterator {list|tuple} -- iterador onde o elemento será pesquisado
-	
+		iterator {list|tuple} -- iterador onde o elemento será pesquisado
+
 	Returns:
-        {tuple} - tupla com os indices onde o elemento solicitado está
+		{tuple} - tupla com os indices onde o elemento solicitado está
 	"""
 
 
-    counter = itertools.count()
-    output = []
-    for element in lista:
-        idx = next(counter)
-        if element == item: output.append(idx) 
+	counter = itertools.count()
+	output = []
+	for element in iterator:
+		idx = next(counter)
+		if element == item: output.append(idx) 
 	return tuple(output)
 
 
 
-def diff_lists(a, b):
-	'''Retorna os itens da lista "a" que não estão em "b".'''
-	o = []
-	for i in a:
-		if i not in b:
-			o.append(i)
-	return o
+def diff_lists(first_list, second_list):
+	"""Retorna os itens da lista "a" que não estão em "b".
+	
+	Arguments:
+		first_list {list|tuple} -- primeiro iterador 
+		second_list {list|tuple} -- segundo iterador 
+	
+	Returns:
+		{list} -- retorna uma lista com os elementos existentes apenas na primeira lista
+	"""
+
+	second_list_sorted = second_list.copy()
+	second_list_sorted.sort()
+
+	output = []
+	for item in first_list:
+		if not bisect_search(item, second_list_sorted):
+			output.append(item)
+	return output
 
 
 
 
-def compare_lists(a, b, historical_analisis=False, listA_NAME='First', listB_NAME='Second'):
+def compare_lists(first_list, second_list, historical_analisis=False, first_list_dict_label='First', second_list_dict_label='Second'):
+	"""Compara duas listas e retorna um dicionário que agrupa itens exclusivos e compartilhados.
+	
+	Arguments:
+		first_list {list|tuple} -- primeiro iterador 
+		second_list {list|tuple} -- segundo iterador 
+	
+	Keyword Arguments:
+		historical_analisis {bool} -- apresenta uma única lista mostrando o que mudou na lista [b] em relação a [a] (default: {False})
+		first_list_dict_label {str} -- [description] (default: {'First'})
+		second_list_dict_label {str} -- [description] (default: {'Second'})
+	
+	Returns:
+		[type] -- [description]
+	"""
 	'''
-	Compara duas listas e retorna um dicionário que agrupa itens exclusivos e compartilhados.
+	
 	Se historical_analisis=True, apresenta uma única lista mostrando o que mudou na lista [b] em relação a [a].
-	Os argumentos listA_NAME e listB_NAME permitem usar nomes específicos para as listas.
+	Os argumentos first_list_dict_label e second_list_dict_label permitem usar nomes específicos para as listas.
 	'''
-	o = {}
+	output = {}
+
 	if historical_analisis == True:
 		#A segunda lista deve ser a mais nova para que os valores retornados sejam os mais atuais...
-		o[u'mudou'] = diff_lists(b,a)
+		output[u'mudou'] = diff_lists(second_list, first_list)
+
 	else:
-		o[u'onlyOn%s' % listA_NAME] = diff_lists(a,b)
-		o[u'onlyOn%s' % listB_NAME] = diff_lists(b,a)
-		o[u'shared'] = intersect_lists(a,b)
-	return o
+		output[u'onlyOn%s' % first_list_dict_label] = diff_lists(first_list, second_list)
+		output[u'onlyOn%s' % second_list_dict_label] = diff_lists(second_list, first_list)
+		output[u'shared'] = intersect_lists(first_list, second_list)
+
+	return output
+
+
+
+def diff_dicts(first_dict, second_dict):
+	"""Compara dois dicionários e retorna os que mudou do segundo em relação ao primeiro
+	
+	Arguments:
+		first_dict {dict} -- primeiro dicionário
+		second_dict {dict} -- segundo dicionário
+	
+	Returns:
+		{list} -- retorna uma lista com o que mudou
+	"""
+
+	l1 = [": ".join(pair) for pair in first_dict.items()]
+	l2 = [": ".join(pair) for pair in second_dict.items()]
+
+	output = compare_lists(l1, l2, historical_analisis=True)
+
+	return output
 
 
 
 
-def diff_dicts(a, b, historical_analisis=True):
-	'''
-	Realiza a comparação entre dois dicionários retornando o que mudou no segundo [b] em relação ao primeiro [a].
-	Se historical_analisis=False, retorna um dicionário agrupando itens exclusivos e compartilhados dessas listas.
-	'''
-	k = []
-	for i in a.keys():
-		k.append(i)
-	k.sort()
-	l1 = []
-	l2 = []
-	for i in k:
-		l1.append((i, a[i]))
-		l2.append((i, b[i]))
-	o = compare_lists(l1, l2, historical_analisis)
-	return o
+def merge_lists(first_list, second_list):
+	"""Une duas listas assumindo que não devem haver quaisquer itens repetidos nelas
+	
+	Arguments:
+		first_list {list} -- [description]
+		second_list {list} -- [description]
+	
+	Returns:
+		{list} -- lista combinada sem repetição de elementos entre a primeira e a segunda lista
+	"""
+
+	if len(first_list) >= len(second_list):
+		longuest = first_list.copy()
+		shortest = second_list
+
+	elif len(first_list) < len(second_list):
+		longuest = second_list.copy()
+		shortest = first_list
+
+	longuest.sort()
+
+	for item in shortest:
+		if not bisect_search(item, longuest):
+			longuest.append(item)
+	
+	return longuest
 
 
 
 
-def merge_lists(a, b):
-	'''Retorna a lista de união, sem repetição de itens existentes em ambas as listas.'''
-	o = []
-	for i in b:
-		o.append(i)
-	for i in a:
-		if i not in b:
-			o.append(i)
-	return o
+def intersect_lists(first_list, second_list):
+	"""Retorna a lista com itens comuns a partir de duas listas de entrada.
+	
+	Arguments:
+		first_list {list} -- primeira lista de entrada
+		second_list {list} -- segunda lista
+	
+	Returns:
+		{list} -- retorna uma sublista com elementos comuns
+	"""
 
 
+	if len(first_list) >= len(second_list):
+		longuest = first_list.copy()
+		shortest = second_list
+
+	elif len(first_list) < len(second_list):
+		longuest = second_list.copy()
+		shortest = first_list
+
+	longuest.sort()
+
+	output = []
+
+	for item in shortest:
+		if bisect_search(item, longuest):
+			output.append(item)
+
+	return output
 
 
-def intersect_lists(a, b):
-	'''Retorna a lista com itens comuns a partir de duas listas de entrada.'''
-	o = []
-	tl = merge_lists(a,b)
-	for i in tl:
-		if (i in a) and (i in b):
-			o.append(i)
-	return o
-
-
-
-def strip_digits(s):
-	r = s
-	for i in digits:
-		r = r.replace(i,'')
-	return r
-
-
-def strip_simbols(s):
-	r = s
-	for i in punctuation+"/":
-		r = r.replace(i,"")
-	return r
-
-def strip_spaces(s):
-	r = s
-	for i in whitespace:
-		r = r.replace(i,"")
-	return r
-
-def strip_chars(s):
-	r = s
-	for i in "abcdefghijklmnopqrstuvxz":
-		r = r.replace(i,"")
-	return r
 
 
 def create_new_value_col_if_old_has_value(list_of_dicts, list_of_old_cols, interactive=True, script_descriptor=None):
