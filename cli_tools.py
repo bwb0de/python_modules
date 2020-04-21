@@ -4,7 +4,7 @@
 #
 
 
-#import sys
+import sys
 import itertools
 import os
 #import io
@@ -19,7 +19,7 @@ import time
 from colored import fg, attr#, bg
 from subprocess import getoutput
 from random import randrange, randint
-from string import whitespace, punctuation, digits
+from string import whitespace, punctuation, digits, ascii_letters
 from collections import OrderedDict#, Counter
 from copy import copy
 
@@ -226,6 +226,66 @@ class Heap():
 	def size(self):
 		return len(self.heap)
 	
+
+
+def branco(string):
+	return "{}{}{}".format(attr(0), string, attr(0))
+
+
+
+def vermelho(string):
+	return "{}{}{}".format(fg(1), string, attr(0))
+
+
+
+def azul_claro(string):
+	return "{}{}{}".format(fg(12), string, attr(0))
+
+
+
+def verde(string):
+	return "{}{}{}".format(fg(2), string, attr(0))
+
+
+
+def verde_limao(string):
+	return "{}{}{}".format(fg(41), string, attr(0))
+
+
+
+def verde_florescente(string):
+	return "{}{}{}".format(fg(10), string, attr(0))
+
+
+
+def verde_mar(string):
+	return "{}{}{}".format(fg(35), string, attr(0))
+
+
+
+def verde_agua(string):
+	return "{}{}{}".format(fg(37), string, attr(0))
+
+
+
+def amarelo(string):
+	return "{}{}{}".format(fg(11), string, attr(0))
+
+
+
+def rosa(string):
+	return "{}{}{}".format(fg(5), string, attr(0))
+
+
+
+def cinza(string):
+	return "{}{}{}".format(fg(8), string, attr(0))
+
+
+
+def salmao(string):
+	return "{}{}{}".format(fg(9), string, attr(0))
+
 
 
 def create_lockfile(filename):
@@ -791,7 +851,7 @@ def create_column_metainfo_file(text_table_filename, text_table_file_folder=os.c
 
 
 
-def print_text_table_file(text_table_filename, count_lines=True, delimiter='\t'):
+def print_text_table_file(text_table_filename, count_lines=True, delimiter='\t', col_padding=2):
 	"""Imprime no console as informações de uma tabela no formato texto.
 	
 	Arguments:
@@ -2055,6 +2115,18 @@ def get_indexes(item, iterator):
 
 
 
+def return_longest_then_shortest_list(first_list, second_list):
+	if len(first_list) >= len(second_list):
+		longuest = first_list.copy()
+		shortest = second_list
+
+	elif len(first_list) < len(second_list):
+		longuest = second_list.copy()
+		shortest = first_list
+
+	return longuest, shortest
+
+
 def diff_lists(first_list, second_list):
 	"""Retorna os itens da lista "a" que não estão em "b".
 	
@@ -2145,13 +2217,7 @@ def merge_lists(first_list, second_list):
 		{list} -- lista combinada sem repetição de elementos entre a primeira e a segunda lista
 	"""
 
-	if len(first_list) >= len(second_list):
-		longuest = first_list.copy()
-		shortest = second_list
-
-	elif len(first_list) < len(second_list):
-		longuest = second_list.copy()
-		shortest = first_list
+	longuest, shortest = return_longest_then_shortest_list(first_list, second_list)
 
 	longuest.sort()
 
@@ -2175,14 +2241,7 @@ def intersect_lists(first_list, second_list):
 		{list} -- retorna uma sublista com elementos comuns
 	"""
 
-
-	if len(first_list) >= len(second_list):
-		longuest = first_list.copy()
-		shortest = second_list
-
-	elif len(first_list) < len(second_list):
-		longuest = second_list.copy()
-		shortest = first_list
+	longuest, shortest = return_longest_then_shortest_list(first_list, second_list)
 
 	longuest.sort()
 
@@ -2196,382 +2255,92 @@ def intersect_lists(first_list, second_list):
 
 
 
-
-def create_new_value_col_if_old_has_value(list_of_dicts, list_of_old_cols, interactive=True, script_descriptor=None):
-	num_of_cols = len(list_of_old_cols)
-
-	if (interactive == False) and (script_descriptor == None):
-		if type(script_descriptor) != dict:
-			print("Descritor não apresentado ou em formato inadequado...")
-			exit()
-
-	if num_of_cols == 1:
-
-		old_col1 = list_of_old_cols[0]
-		old_col1_values = []
-		for line in list_of_dicts:
-			if not line[old_col1] in old_col1_values:
-				old_col1_values.append(line[old_col1])
-		old_col1_values.sort()
-
-		if interactive == True:
-			print("Selecione os valores que deverão ser checados para disparar o gatilho de registro:")
-			selected = select_ops(old_col1_values, 2)
-			print("Defina o nome da nova coluna:")
-			print("Cuidado! Se o nome definido for igual a un nome anteriormente existente, as informações anteriores dessa coluna serão sobrescritas:\n")
-			new_col_name = input("$: ")
-			print("Defina o valor que deverá ser registrado na nova coluna quando os valores selecionados forem encontrados: \n")
-			new_value = input("$: ")
-		else:
-			selected = script_descriptor['valores_de_checagem'][list_of_old_cols[0]]
-			new_col_name = script_descriptor['nome_da_nova_coluna']
-			new_value = script_descriptor['valor_se_checagem_verdadeira']
-
-		for line in list_of_dicts:
-			if line.get(new_col_name) == None:
-				line[new_col_name] = ""
-			if line[old_col1] in selected:
-				line[new_col_name] = new_value
+def convert_list_to_cli_args(iterator):
+	"""Converte uma iterator de elementos em uma string de argumentos do shell
 	
-	elif num_of_cols == 2:
+	Arguments:
+		iterator {list|tuple} -- lista de entrada
 	
-		old_col1 = list_of_old_cols[0]
-		old_col2 = list_of_old_cols[1]
-		old_col1_values = []
-		old_col2_values = []
+	Returns:
+		{string} -- retorna uma string de argumentos encapsulados em '"'.
+	"""
 	
-		for line in list_of_dicts:
-			if not line[old_col1] in old_col1_values:
-				old_col1_values.append(line[old_col1])
-			if not line[old_col2] in old_col2_values:
-				old_col2_values.append(line[old_col2])
+	iterator_checked = [str(element) for element in iterator]
+	o = '" "'.join(iterator_checked)
+	o = '"' + o + '"'
+	return o
+
+
+
+
+def mk_random_pass(lenght, pass_type='alpha-numeric'):
+	"""Cria uma sequência 'aleatória' para ser utilizada como senha
 	
-		old_col1_values.sort()
-		old_col2_values.sort()
-
-		if interactive == True:
-			print("Selecione os valores que deverão ser checados para disparar o gatilho de registro na coluna {}:".format(list_of_old_cols[0]))
-			selected_itens_col1 = select_ops(old_col1_values, 2)
-			print("Selecione os valores que deverão ser checados para disparar o gatilho de registro na coluna {}:".format(list_of_old_cols[1]))
-			selected_itens_col2 = select_ops(old_col2_values, 2)
-
-			print("Defina o nome da nova coluna:")
-			print("Cuidado! Se o nome definido for igual a un nome anteriormente existente, as informações anteriores dessa coluna serão sobrescritas:\n")
-			new_col_name = input("$: ")
-
-			print("Defina o valor que deverá ser registrado na nova coluna quando os valores selecionados forem encontrados: \n")
-			new_value = input("$: ")
-		else:
-			selected_itens_col1 = script_descriptor['valores_de_checagem'][list_of_old_cols[0]]
-			selected_itens_col2 = script_descriptor['valores_de_checagem'][list_of_old_cols[1]]
-			new_col_name = script_descriptor['nome_da_nova_coluna']
-			new_value = script_descriptor['valor_se_checagem_verdadeira']
-
-		for line in list_of_dicts:
-			if line.get(new_col_name) == None:
-				line[new_col_name] = ""
-			if (line[old_col1] in selected_itens_col1) and (line[old_col2] in selected_itens_col2):
-				line[new_col_name] = new_value
+	Arguments:
+		lenght {int} -- comprimento da saída
 	
-	elif num_of_cols == 3:
-		old_col1 = list_of_old_cols[0]
-		old_col2 = list_of_old_cols[1]
-		old_col3 = list_of_old_cols[2]
-		old_col1_values = []
-		old_col2_values = []
-		old_col3_values = []
-
-		if interactive == True:
-
-			for line in list_of_dicts:
-				if not line[old_col1] in old_col1_values:
-					old_col1_values.append(line[old_col1])
-				if not line[old_col2] in old_col2_values:
-					old_col2_values.append(line[old_col2])
-				if not line[old_col3] in old_col3_values:
-					old_col3_values.append(line[old_col3])				
-
-			old_col1_values.sort()
-			old_col2_values.sort()
-			old_col3_values.sort()
-
-			print("Selecione os valores que deverão ser checados para disparar o gatilho de registro na coluna {}:".format(old_col1))
-			selected_itens_col1 = select_ops(old_col1_values, 2)
-			print("Selecione os valores que deverão ser checados para disparar o gatilho de registro na coluna {}:".format(old_col2))
-			selected_itens_col2 = select_ops(old_col2_values, 2)
-			print("Selecione os valores que deverão ser checados para disparar o gatilho de registro na coluna {}:".format(old_col3))
-			selected_itens_col3 = select_ops(old_col3_values, 2)
-
-			print("Defina o nome da nova coluna:")
-			print("Cuidado! Se o nome definido for igual a un nome anteriormente existente, as informações anteriores dessa coluna serão sobrescritas:\n")
-			new_col_name = input("$: ")
-
-			print("Defina o valor que deverá ser registrado na nova coluna quando os valores selecionados forem encontrados: \n")
-			new_value = input("$: ")
-		else:
-			selected_itens_col1 = script_descriptor['valores_de_checagem'][list_of_old_cols[0]]
-			selected_itens_col2 = script_descriptor['valores_de_checagem'][list_of_old_cols[1]]
-			selected_itens_col3 = script_descriptor['valores_de_checagem'][list_of_old_cols[2]]
-
-			new_col_name = script_descriptor['nome_da_nova_coluna']
-			new_value = script_descriptor['valor_se_checagem_verdadeira']
-
-		count = 0
-		for line in list_of_dicts:
-			count += 1
-
-			if line.get(new_col_name) == None:
-				line[new_col_name] = ""
-
-			if selected_itens_col1.find(line[old_col1]) != -1:
-				if selected_itens_col2.find(line[old_col2]) != -1:
-					if selected_itens_col3.find(line[old_col3]) != -1:
-
-						print("Encontrada correspondência na linha: {} » {} ".format(count, line["NOME_ESTUDANTE"]))
-						print("  ·", old_col1, "»» {} in {}".format(line[old_col1], selected_itens_col1))
-						print("  ·", old_col2, "»» {} in {}".format(line[old_col2], selected_itens_col2))
-						print("  ·", old_col3, "»» {} in {}".format(line[old_col3], selected_itens_col3))	
-						print("")
-						if line["NOME_ESTUDANTE"] == "Rodrigo Ramos de Lima":
-							input()
-
-						line[new_col_name] = new_value
-
-		return list_of_dicts
-
-	elif num_of_cols == 4:
-
-		old_col1 = list_of_old_cols[0]
-		old_col2 = list_of_old_cols[1]
-		old_col3 = list_of_old_cols[2]
-		old_col4 = list_of_old_cols[4]
-		old_col1_values = []
-		old_col2_values = []
-		old_col3_values = []
-		old_col4_values = []
-
-		for line in list_of_dicts:
-			if not line[old_col1] in old_col1_values:
-				old_col1_values.append(line[old_col1])
-			if not line[old_col2] in old_col2_values:
-				old_col2_values.append(line[old_col2])
-			if not line[old_col3] in old_col3_values:
-				old_col3_values.append(line[old_col3])
-			if not line[old_col4] in old_col4_values:
-				old_col4_values.append(line[old_col4])								
-
-		old_col1_values.sort()
-		old_col2_values.sort()
-		old_col3_values.sort()
-		old_col4_values.sort()
-
-		if interactive == True:
-			print("Selecione os valores que deverão ser checados para disparar o gatilho de registro na coluna {}:".format(old_col1))
-			selected_itens_col1 = select_ops(old_col1_values, 2)
-			print("Selecione os valores que deverão ser checados para disparar o gatilho de registro na coluna {}:".format(old_col2))
-			selected_itens_col2 = select_ops(old_col2_values, 2)
-			print("Selecione os valores que deverão ser checados para disparar o gatilho de registro na coluna {}:".format(old_col3))
-			selected_itens_col3 = select_ops(old_col3_values, 2)
-			print("Selecione os valores que deverão ser checados para disparar o gatilho de registro na coluna {}:".format(old_col4))
-			selected_itens_col4 = select_ops(old_col4_values, 2)		
-
-			print("Defina o nome da nova coluna:")
-			print("Cuidado! Se o nome definido for igual a un nome anteriormente existente, as informações anteriores dessa coluna serão sobrescritas:\n")
-			new_col_name = input("$: ")
-
-			print("Defina o valor que deverá ser registrado na nova coluna quando os valores selecionados forem encontrados: \n")
-			new_value = input("$: ")
-		else:
-			selected_itens_col1 = script_descriptor['valores_de_checagem'][list_of_old_cols[0]]
-			selected_itens_col2 = script_descriptor['valores_de_checagem'][list_of_old_cols[1]]
-			selected_itens_col3 = script_descriptor['valores_de_checagem'][list_of_old_cols[2]]
-			selected_itens_col4 = script_descriptor['valores_de_checagem'][list_of_old_cols[3]]			
-			new_col_name = script_descriptor['nome_da_nova_coluna']
-			new_value = script_descriptor['valor_se_checagem_verdadeira']
-
-		for line in list_of_dicts:
-			if line.get(new_col_name) == None:
-				line[new_col_name] = ""
-			if (line[old_col1] in selected_itens_col1) and (line[old_col2] in selected_itens_col2) and (line[old_col3] in selected_itens_col3) and (line[old_col4] in selected_itens_col4):
-				line[new_col_name] = new_value
-	return list_of_dicts
-
-
-def create_new_value_col_from_script(script_instructions, input_file_info):
-
-	'''
-	output = input_file_info
-
-	for line in output:
-		line['CALOURO_SELECIONADO'] = ''
-		if (line['P_EST'] == line['P_ING']) and (line['AES_GRUPO'] == 'Perfil'):
-			line['CALOURO_SELECIONADO'] = 1
+	Keyword Arguments:
+		pass_type {str} -- tipo de caracteres que podem ser utilizados (default: {'alpha-numeric'})
 	
-	return output
+	Returns:
+		{string} -- sequencia de caracteres aleatória conforme regra definida
+	"""
 
-	'''
-	tasks = script_instructions['analises']
+	def pick_one_from(string):
+		idx = randrange(len(string))
+		return string[idx]
 
-	output = input_file_info
-
-	for task in tasks:
-		colunas_selecionadas = []
-		for c in task['valores_de_checagem'].keys():
-			colunas_selecionadas.append(c)
-			output = create_new_value_col_if_old_has_value(output, colunas_selecionadas, interactive=False, script_descriptor=task)
-	
-	return output
-
-
-def convert_list_to_cli_args(lista):
-    o = '" "'.join(lista)
-    o = '"' + o + '"'
-    return o
-
-
-def mk_randnum_seq(num):
 	output = ''
-	while num != 0:
-		idx = randrange(len(digits))
-		output += digits[idx]
-		num -= 1
+
+	while lenght != 0:
+		if pass_type == 'numeric':
+			output += pick_one_from(digits)
+
+		elif pass_type == 'alphabetic':
+			output += pick_one_from(ascii_letters)
+
+		elif pass_type == 'alpha-numeric':
+			output += pick_one_from(digits+ascii_letters)
+			
+		elif pass_type == 'alpha-numeric+':
+			output += pick_one_from(digits+ascii_letters+punctuation)
+
+		lenght -= 1
+
 	return output
 
 
-def branco(string):
-	return "{}{}{}".format(attr(0), string, attr(0))
 
-def vermelho(string):
-	return "{}{}{}".format(fg(1), string, attr(0))
+def render_selection_items(lista, n, item_color=amarelo, warning_color=vermelho):
+	"""Imprime um campo de opçõe numeradas para ser usado em perguntas fechadas
+	
+	Arguments:
+		lista {list} -- lista de opções/respostas possíveis
+		n {int} -- número de colunas
+	
+	Keyword Arguments:
+		item_color {lambda} -- função definidora da cor de saída (default: {amarelo})
+		warning_color {lambda} -- função definidora da cor de saída (default: {vermelho})
+	"""
+	
+	assert isinstance(lista, (list, tuple))
+	assert isinstance(n, int)
 
-def azul_claro(string):
-	return "{}{}{}".format(fg(12), string, attr(0))
-
-def verde(string):
-	return "{}{}{}".format(fg(2), string, attr(0))
-
-def verde_limao(string):
-	return "{}{}{}".format(fg(41), string, attr(0))
-
-def verde_florescente(string):
-	return "{}{}{}".format(fg(10), string, attr(0))
-
-def verde_mar(string):
-	return "{}{}{}".format(fg(35), string, attr(0))
-
-def verde_agua(string):
-	return "{}{}{}".format(fg(37), string, attr(0))
-
-def amarelo(string):
-	return "{}{}{}".format(fg(11), string, attr(0))
-
-def rosa(string):
-	return "{}{}{}".format(fg(5), string, attr(0))
-
-def cinza(string):
-	return "{}{}{}".format(fg(8), string, attr(0))
-
-def salmao(string):
-	return "{}{}{}".format(fg(9), string, attr(0))
-
-
-def saida_verde(rotulo, valor, referencia='', escalonamento=[]):
-	if referencia != '':
-		if escalonamento != []:
-			partes = '('
-			n = len(escalonamento)
-			l_step = 0
-			while l_step != n:
-				if l_step == n-1:
-					partes += str(escalonamento[l_step])
-					partes += ')'
-				else:
-					partes += str(escalonamento[l_step])
-					partes += '/'
-				l_step += 1
-			return str(verde(rotulo) + ' ({})'.format(referencia) +": {} ".format(valor) + partes)
-		else:
-			return str(verde(rotulo) + ' ({})'.format(referencia) +": {} ".format(valor))
-	else:
-		return str(verde('{}'.format(rotulo)) +": {} ".format(valor))
-
-
-
-
-def saida_vermelha(rotulo, valor, referencia='', escalonamento=[]):
-	if referencia != '':
-		if escalonamento != []:
-			partes = '('
-			n = len(escalonamento)
-			l_step = 0
-			while l_step != n:
-				if l_step == n-1:
-					partes += str(escalonamento[l_step])
-					partes += ')'
-				else:
-					partes += str(escalonamento[l_step])
-					partes += '/'
-				l_step += 1
-			return str(vermelho(rotulo) + ' ({})'.format(referencia) +": {} ".format(valor) + partes)
-		else:
-			return str(vermelho(rotulo) + ' ({})'.format(referencia) +": {} ".format(valor))
-	else:
-		return str(vermelho('{}'.format(rotulo)) +": {} ".format(valor))
-
-
-
-
-def saida_rosa(rotulo, valor, referencia='', escalonamento=[]):
-	if referencia != '':
-		if escalonamento != []:
-			partes = '('
-			n = len(escalonamento)
-			l_step = 0
-			while l_step != n:
-				if l_step == n-1:
-					partes += str(escalonamento[l_step])
-					partes += ')'
-				else:
-					partes += str(escalonamento[l_step])
-					partes += '/'
-				l_step += 1
-			return str(rosa(rotulo) + ' ({})'.format(referencia) +": {} ".format(valor) + partes)
-		else:
-			return str(rosa(rotulo) + ' ({})'.format(referencia) +": {} ".format(valor))
-	else:
-		return str(rosa('{}'.format(rotulo)) +": {} ".format(valor))
-		
-
-
-def limpar_tela(msg=None):
-	os.system("clear")
-	if msg != None:
-		print(msg)
-
-
-
-def render_cols(lista, n, idx=True, item_color=amarelo, warning_color=vermelho):
-	larguras = []
 	largura_max = None
+
 	for item in lista:
 		if largura_max == None:
 			largura_max = len(item)
 		elif len(item) > largura_max:
 			largura_max = len(item)
+
 	largura_max += 5
 
 	line = ''
 	num_of_cols = n
 	for item in lista:
-		if idx == True:
-			if num_of_cols != 0:
-				line += '{}: {}'.format(str(lista.index(item)), item_color(item)).ljust(largura_max)
-		elif idx == False:
-			if num_of_cols != 0:
-				line += '{}'.format(item_color(item)).ljust(largura_max)
-		else:
-			print(warning_color("Argumento idx deve ser Boleano..."))
-			raise TypeError
+		if num_of_cols != 0:
+			line += '{}: {}'.format(str(lista.index(item)), item_color(item)).ljust(largura_max)
 		
 		num_of_cols -= 1
 		if num_of_cols == 0:
@@ -2579,80 +2348,97 @@ def render_cols(lista, n, idx=True, item_color=amarelo, warning_color=vermelho):
 			num_of_cols = n
 
 	print(line)
-
-		
-
-def gerar_console_menu(lista, cols=1, item_color=amarelo, warning_color=vermelho):
-	o = ''
-	n = 0
-	if type(lista) == list:
-		o = ''
-		for item in lista:
-			o += str(n) + ': ' + str(item_color(item)) + os.linesep
-			n += 1
-		if cols == 1:
-			print(o)
-		else:
-			render_cols(lista, cols)
-		return lista
-	else:
-		print(warning_color("O argumento precisa ser do tipo lista..."))
-		raise TypeError
+	return lista
 
 
 
-def input_num(label, default=0, label_color=branco, warning_color=vermelho):
-	entry = False
-	while entry != True:
-		try:
-			num = input('{} [{}]: '.format(label_color(label), label_color(default)))
-			if num == '':
-				num = float(default)
-				break
-			num = float(num)
-			break
-		except:
-			print(warning_color('Resultado precisa ser numérico...'))
-			entry = False
-	return num
+def write_to_file(s, filename, file_folder=os.curdir):
+	"""Cria o arquivo alvo e escreve a string 's' nele. Se o arquivo existir, o conteúdo será apagado.
+	
+	Arguments:
+		s {str} -- informação a ser escrita
+		target_file {str} -- [description]
 
-def write_to_file(s, target_file):
-	with open(target_file, 'w') as f:
+	Keyword Arguments:
+		file_folder {string} -- pasta onde o arquivo está localizado (default: {os.curdir})
+	"""
+	with open(file_folder + os.sep + filename, 'w') as f:
 		f.write(s)
 
-def read_from_file(target_file):
-	with open(target_file) as f:
+
+
+def read_from_file(filename, file_folder=os.curdir):
+	"""Lê o conteúdo de um arquivo de texto alvo
+	
+	Arguments:
+		filename {string} -- nome do arquivo alvo
+	
+	Keyword Arguments:
+		file_folder {string} -- pasta onde o arquivo está localizado (default: {os.curdir})
+	
+	Returns:
+		{string} -- conteúdo do arquivo
+	"""
+
+	with open(filename) as f:
 		return f.read()
 
-
-def input_op(lista_de_opcoes_validas, input_label=False, label_color=branco, warning_color=vermelho):
-	if input_num:
-		print(label_color(input_label), label_color('[{}]').format("|".join(lista_de_opcoes_validas)))
-		
-	while True:
-		op = input(label_color(('$: ')))
-		if not op in lista_de_opcoes_validas:
-			print(warning_color("Opção inválida! Selecione entre [{}].".format("|".join(lista_de_opcoes_validas))))
-		else:
-			return op
 
 
 
 def convert_items_to_int(original_list):
+	"""Converte os elementos da lista fornecida em inteiros, elementos precisam ser conversíveis...
+	
+	Arguments:
+		original_list {list} -- lista de números em formato string
+	
+	Returns:
+		[type] -- [description]
+	"""
+
+	assert isinstance(original_list[0], (str, float, int))
+
 	return [int(n) for n in original_list]
 
 
+
 def read_input(input_label=False, default=False, dada_type='string', data_pattern=False, prompt="$: ", list_item_delimiter=',', waring_msg="Resposta inválida ou em formato inadequado...", clear_screen=False, label_color=branco, prompt_color=branco, warning_color=vermelho, callback=False, break_line=True):
+	"""Recebe as informações fornecidas pelo teclado e converte conforme o dado conforme o tipo definido
+	
+	Keyword Arguments:
+		input_label {string} -- enunciado do campo input (default: {False})
+		default {value} -- valor a ser apresentado como padrão (default: {False})
+		dada_type {str} -- string indicativa do tipo de dado a ser recebido:
+		    » string: campo textual (default: {'string'})
+			» int: número inteiro
+			» float: número real
+			» list: lista de elementos
+			» date-br: data no formato brasileiro DD/MM/AAAA
+			» date-us: data no formato norte-americano MM/DD/AAAA
+			» date: data no formato internacional AAAA-MM-DD
+		data_pattern {regex} -- expressão regular de validação (default: {False})
+		prompt {str} -- estilo do prompt do input (default: {"$: "})
+		list_item_delimiter {str} -- delimitador de lista utilizado para conversão da resposta em elementos (default: {','})
+		waring_msg {str} -- mensagem de atenção (default: {"Resposta inválida ou em formato inadequado..."})
+		clear_screen {bool} -- indica se a tela deve ser limpa antes de renderizar o input (default: {False})
+		label_color {[type]} -- cor do enunciado do campo input  (default: {branco})
+		prompt_color {[type]} -- cor do prompt (default: {branco})
+		warning_color {[type]} -- cor do texto de aviso (default: {vermelho})
+		callback {lambda} -- função de retorno que deverá ser executada ao final das intruções  (default: {False})
+		break_line {bool} -- indica a necessidade de incluir quebra de linha após a seleção (default: {True})
+	
+	Returns:
+		{string|int|float...} -- retorna o dado inserido no formato desejado...
+	"""
+	
 	if clear_screen:
-		limpar_tela()
+		clear()
 		
 	if input_label:
 		if default: print(input_label + ' [{}]'.format(str(default)))
 		else: print(input_label)
-		
 
 	while True:
-
 		response = input(prompt_color(prompt))
 		all_ok = False
 
@@ -2664,27 +2450,25 @@ def read_input(input_label=False, default=False, dada_type='string', data_patter
 				try:
 					response = int(response)
 					all_ok = True
-				
 				except ValueError: print(warning_color(waring_msg))
 			
 			elif dada_type == 'float':
 				try: 
 					response = float(response)
 					all_ok = True
-				
 				except ValueError: print(warning_color(waring_msg))
 
 			elif dada_type == 'list':
 				try: 
 					response = split_and_strip(response, list_item_delimiter)
 					all_ok = True
-				
 				except ValueError: print(warning_color(waring_msg))
 
+			elif dada_type == 'date':
+				pass
 
 			if all_ok:
 				break
-			
 		else:
 			try:
 				re.search(data_pattern, response).string
@@ -2698,14 +2482,55 @@ def read_input(input_label=False, default=False, dada_type='string', data_patter
 	return response
 
 
-def sim_ou_nao(input_label=False, clear_screen=False, label_color=branco, prompt_color=branco, warning_color=vermelho):
+def input_yes_or_no(input_label=False, clear_screen=False, label_color=branco, prompt_color=branco, warning_color=vermelho):
+	"""Utiliza 'read_input' para fazer uma pergunta de resposta binária sim/não
+	
+	Keyword Arguments:
+		input_label {string} -- enunciado a ser presentado (default: {False})
+		clear_screen {bool} -- indica se a tela deve ser apagada antes de apresentar a questão (default: {False})
+		label_color {[type]} -- cor do enunciado da questão (default: {branco})
+		prompt_color {[type]} -- cor do prompt de resposta (default: {branco})
+		warning_color {[type]} -- cor da mensagem de aviso (default: {vermelho})
+	
+	Returns:
+		{string} -- retorna 's' ou 'n'
+	"""
 	return read_input(input_label=input_label, dada_type='string', data_pattern='[sn]', waring_msg="Responda 's' ou 'n'...", clear_screen=False, label_color=branco, prompt_color=branco, warning_color=vermelho, callback=False, break_line=True)
 
 
 
+def clear():
+	if sys.platform == 'win32': os.system('cls')
+	else: os.system('clear')
+
+
+
 def pick_options(selection_list, input_label=False, number_of_cols=1, max_selection=1, sort_selection_list=False, clear_screen=False, label_color=branco, item_color=amarelo, warning_msg='Digite número(s) correspondente(s) às opções...', prompt='$: ', prompt_color=branco, warning_color=vermelho, return_index=False):
+	"""[summary]
+	
+	Arguments:
+		selection_list {list} -- lista com opções fechadas para serem selecionadas
+	
+	Keyword Arguments:
+		input_label {bool} -- enunciado que deverá ser apresentado para a questão (default: {False})
+		number_of_cols {int} -- nomero de colunas a ser impressa (default: {1})
+		max_selection {int} -- numero máximo de elementos que podem ser selecionados (default: {1})
+		sort_selection_list {bool} -- indica se a lista deve ser ordenada antes de ser impressa (default: {False})
+		clear_screen {bool} -- indica se a tela deve ser limpa antes da questão ser impressa (default: {False})
+		label_color {[type]} -- cor do enunciado (default: {branco})
+		item_color {[type]} -- cor dos itens (default: {amarelo})
+		warning_msg {str} -- conteúdo da mensagem de atenção (default: {'Digite número(s) correspondente(s) às opções...'})
+		prompt {str} -- formato do prompt (default: {'$: '})
+		prompt_color {[type]} -- cor do prompt (default: {branco})
+		warning_color {[type]} -- cor da mensagem de alerta (default: {vermelho})
+		return_index {bool} -- indica se a função deve retornar o elemento selecionado ou o seu index (default: {False})
+	
+	Returns:
+		{string|list} -- retorna a string do elemento selecionado ou uma lista quando mais elementos são escolhidos
+	"""
+
 	if clear_screen:
-		limpar_tela()
+		clear()
 
 	if input_label:
 		print(label_color(input_label))
@@ -2713,7 +2538,8 @@ def pick_options(selection_list, input_label=False, number_of_cols=1, max_select
 	if sort_selection_list:
 		selection_list.sort()
 
-	op_list = gerar_console_menu(selection_list, number_of_cols, item_color=item_color)
+	op_list = render_selection_items(selection_list, number_of_cols, item_color=item_color)
+
 	op = None
 
 	while True:
@@ -2743,103 +2569,104 @@ def pick_options(selection_list, input_label=False, number_of_cols=1, max_select
 
 
 
-def select_op(lista_de_selecao, col_num, sort_list=False, input_label=False, clear_screen=False, label_color=branco, item_color=amarelo, warning_color=vermelho, return_index=False):
-	if clear_screen:
-		limpar_tela()
-
-	if input_label:
-		print(label_color(input_label))
-
-	if sort_list == True:
-		lista_de_selecao.sort()
-
-	op_list = gerar_console_menu(lista_de_selecao, col_num, item_color=item_color)
-	op = None
-	#while check_item_list(op,range(0,len(op_list))) != True:
-	while not op in range(0,len(op_list)):
-		try:
-			op = input(label_color('$: '))
-			if op[0] == ":":
-				return op
-			op = int(op)
-		except:
-			print(warning_color('Resultado precisa ser numérico...'))
-	if return_index:
-		return op
-	return [op_list[op]]
-
-
-
-def select_ops(lista_de_selecao, col_num, sort_list=False, input_label=False, clear_screen=False, label_color=branco, item_color=amarelo, warning_color=vermelho, return_index=False):
-	'''
-	select_ops(lista_de_selecao, col_num, sort_list=False) -> similar à "select_op", mas aceita mais de uma resposta.
-	
-	O campo "col_num" indica a quantidade de colunas a ser apresentada. Em definindo "sort_list" como True a lista original será reorganizada.
-	'''
-	if clear_screen:
-		limpar_tela()
-
-	if input_label:
-		print(input_label)
-
-	if sort_list == True:
-		lista_de_selecao.sort()
-	op_list = gerar_console_menu(list(lista_de_selecao), col_num)
-	while True:
-		op = interval_select(input(amarelo('$: ')))
-		if op[0] == ":":
-			return op
-		try:
-			selecao = []
-			for i in op:
-				if return_index:
-					selecao.append(int(i))
-				else:
-					selecao.append(op_list[int(i)])
-			break
-		except IndexError:
-			print('Opção inválida...')
-	
-	return selecao
-
 
 def interval_select(selection_string):
-	if selection_string[0] == ':':
-		return selection_string
-	else:
-		selection_list = selection_string.replace(" ","").split(",")
-		output = []
-		for item in selection_list:
-			try:
-				if item.find('-') != -1:
-					first_interval_item = int(item.split('-')[0])
-					last_interval_item = int(item.split('-')[1])
-					for n in range(first_interval_item, last_interval_item+1):
-						output.append(n)
-				else:
-					output.append(int(item))
-			except AttributeError:
-				pass
-		output.sort()
-		return output
+	"""Converte intervalos de seleção (ex.: 1-5) em uma sequência (1,2,3,4,5)
+	
+	Arguments:
+		selection_string {string} -- string com representação dos elementos selecionados
+	
+	Returns:
+		{list} -- retorna lista ordenada
+	"""
+
+	selection_string = selection_string.replace(" ","") 
+	selection_list = split_and_strip(selection_string,",")
+
+	output = []
+
+	for item in selection_list:
+		try:
+			if item.find('-') != -1:
+				first_interval_item = int(item.split('-')[0])
+				last_interval_item = int(item.split('-')[1])
+				for n in range(first_interval_item, last_interval_item+1):
+					output.append(n)
+			else:
+				output.append(int(item))
+		except AttributeError:
+			pass
+
+	output.sort()
+	return output
 
 
-def append_index_do_dict(key, index_value, index_dict):
-	'''It adds a key index on index_dict'''
-	if index_dict.get(key) == None:
-		index_dict[key] = [index_value]
-	else:
-		index_dict[key].append(index_value)
-	return index_dict
+
+def lexical_list_join(iterator):
+	"""Concatena elementos de uma iterator conforme enumeração formal na língua portuguesa
+	
+	Arguments:
+		iterator {list|tuple} -- lista com elementos a serem concatenados
+	
+	Returns:
+		{string} -- retorna uma string no formato: 'e1, e2, [...] e en'
+	"""
+
+	assert isinstance(iterator, (list, tuple))
+
+    output = ""
+
+    for item in iterator:
+        output += item
+        if item == iterator[-1]:
+            pass
+        elif item == iterator[-2]:
+            output += ' e '
+        else:
+            output += ', '
+
+    return output
 
 
-def exhaust_generator_and_print(generator, count_lines=False):
-	counter = itertools.count(start=1)
-	for line in generator:
-		if count_lines:
-			print(next(counter), line)
+def sort_dict(dictionary, sorting_crit=lambda x: x):
+	"""Retorna um OrderedDict com as chaves apresntadas conforme a ordem definida
+	
+	Arguments:
+		dictionary {[type]} -- [description]
+	
+	Returns:
+		[type] -- [description]
+	"""
+	output = OrderedDict()
+	for key in sorted(dictionary, key=sorting_crit):
+		if type(dictionary[key]) == dict:
+			output[key] = sort_dict(dictionary[key])
+		elif type(dictionary[key]) == list:
+			output[key] = sort_questions_inner_dict(dictionary[key])
 		else:
-			print(line)
+			output[key] = dictionary[key]
+	return output
+
+
+def sort_questions_inner_dict(list_of_dicts):
+	output = []
+	for dict_item in list_of_dicts:
+		sorted_dict_item = OrderedDict()
+		for k in sorted(dict_item, reverse=True):
+			sorted_dict_item[k] = dict_item[k]
+		output.append(sorted_dict_item)
+	return output
+
+
+def return_obj_from_dict(dictionary):
+    class Obj:
+        pass
+    obj = Obj()
+
+    for k, v in dictionary.items():
+        setattr(obj, k, v)
+    
+    return obj
 
 
 
@@ -3238,47 +3065,3 @@ def render_form_get_values(form_file, skip_q=[]):
 		return nfo
 
 	
-def lexical_list_join(lista):
-    output = ""
-    for item in lista:
-        output += item
-        if item == lista[-1]:
-            pass
-        elif item == lista[-2]:
-            output += ' e '
-        else:
-            output += ', '
-    return output
-
-
-def sort_dict(dictionary):
-	output = OrderedDict()
-	for key in sorted(dictionary):
-		if type(dictionary[key]) == dict:
-			output[key] = sort_dict(dictionary[key])
-		elif type(dictionary[key]) == list:
-			output[key] = sort_questions_inner_dict(dictionary[key])
-		else:
-			output[key] = dictionary[key]
-	return output
-
-
-def sort_questions_inner_dict(list_of_dicts):
-	output = []
-	for dict_item in list_of_dicts:
-		sorted_dict_item = OrderedDict()
-		for k in sorted(dict_item, reverse=True):
-			sorted_dict_item[k] = dict_item[k]
-		output.append(sorted_dict_item)
-	return output
-
-
-def return_obj_from_dict(dictionary):
-    class Obj:
-        pass
-    obj = Obj()
-
-    for k, v in dictionary.items():
-        setattr(obj, k, v)
-    
-    return obj
