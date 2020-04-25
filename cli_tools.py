@@ -2614,33 +2614,34 @@ def lexical_list_join(iterator):
 
 	assert isinstance(iterator, (list, tuple))
 
-    output = ""
+	output = ""
 
-    for item in iterator:
-        output += item
-        if item == iterator[-1]:
-            pass
-        elif item == iterator[-2]:
-            output += ' e '
-        else:
-            output += ', '
+	for item in iterator:
+		output += item
+		if item == iterator[-1]:
+			pass
+		elif item == iterator[-2]:
+			output += ' e '
+		else:
+			output += ', '
 
-    return output
+	return output
 
 
-def sort_dict(dictionary, sorting_crit=lambda x: x):
+def sort_dict(dictionary, sorting_criteria=lambda x: x, reverse=False):
 	"""Retorna um OrderedDict com as chaves apresntadas conforme a ordem definida
 	
 	Arguments:
-		dictionary {[type]} -- [description]
+		dictionary {dict} -- dicionário de entrada as chaves precisam ser comparáveis
 	
 	Returns:
-		[type] -- [description]
+		{OrderedDict} -- dicionário com chaves ordenadas conforme o critério fornecido
 	"""
+
 	output = OrderedDict()
-	for key in sorted(dictionary, key=sorting_crit):
+	for key in sorted(dictionary, key=sorting_criteria, reverse=reverse):
 		if type(dictionary[key]) == dict:
-			output[key] = sort_dict(dictionary[key])
+			output[key] = sort_dict(dictionary[key], reverse=reverse)
 		elif type(dictionary[key]) == list:
 			output[key] = sort_questions_inner_dict(dictionary[key])
 		else:
@@ -2648,26 +2649,21 @@ def sort_dict(dictionary, sorting_crit=lambda x: x):
 	return output
 
 
-def sort_questions_inner_dict(list_of_dicts):
+def sort_inner_dicts(list_of_dicts, sorting_criteria=lambda x: x, reverse=False):
+	"""Retorna uma lista em que os dicionários fornecidos na lista original são ordenados
+
+	Arguments:
+		list_of_dicts {list|tuple} -- lista de entrada com dicionários dispostos
+
+	Returns:
+		{list} -- lista com os dicionários/linhas ordenados conforme o critério fornecido
+	"""
+
 	output = []
 	for dict_item in list_of_dicts:
-		sorted_dict_item = OrderedDict()
-		for k in sorted(dict_item, reverse=True):
-			sorted_dict_item[k] = dict_item[k]
+		sorted_dict_item = sort_dict(dict_item, sorting_criteria=sorting_criteria, reverse=reverse)
 		output.append(sorted_dict_item)
 	return output
-
-
-def return_obj_from_dict(dictionary):
-    class Obj:
-        pass
-    obj = Obj()
-
-    for k, v in dictionary.items():
-        setattr(obj, k, v)
-    
-    return obj
-
 
 
 
