@@ -1,0 +1,7 @@
+nome:idade:altura:escolaridade:familia
+Daniel:38:1,84:Superior Completo:Cruz
+Mariana:36:1,70:Mestre:Cruz
+Alice:6:1,20:Alfabetizada:Cruz
+Vicente:3:0,98:Pré-escola:Cruz
+Vilmar:23:1,75:Superior Completo:Silva
+Olívia:32:1,78:Superior Completo:Silva

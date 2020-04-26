@@ -1,56 +1,43 @@
-
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+# license: AGPL-3.0 
 #
-#
-#  Copyright 2017 Daniel Cruz <bwb0de@bwb0dePC>
-#  Version 0.1
-#
-#  This program is free software; you can redistribute it and/or modify
-#  it under the terms of the GNU General Public License as published by
-#  the Free Software Foundation; either version 2 of the License, or
-#  (at your option) any later version.
-#
-#  This program is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU General Public License for more details.
-#
-#  You should have received a copy of the GNU General Public License
-#  along with this program; if not, write to the Free Software
-#  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
-#  MA 02110-1301, USA.
-#
-#
+
 
 import itertools
 import re
 import os
+import time
 
 from collections import OrderedDict
-from modules.cli_tools import strip_simbols, strip_spaces, verde, amarelo, select_op, limpar_tela, branco, amarelo, vermelho
-import modules.py_pickle_handlers as pk
+
+from cli_tools import strip_simbols, strip_spaces, verde, amarelo, select_op, limpar_tela, branco, amarelo, vermelho, read_input
+from cli_tools import bisect_search_idx, create_col_index, string_table_to_int_matrix, create_reference_table, print_numeric_matrix, pick_options, today_date
+from cli_tools import ColisionDict, PK_LinkedList
+
+import py_pickle_handlers as pk
+
 
 
 class PickleDataType():
-    def __init__(self):
-        self.target_folder = False
-        self.filename = False
+    def __init__(self, target_folder=False, filename=False):
+        self.target_folder = target_folder
+        self.filename = filename
 
-    def persist(self, file_ext=False, fname=False):
-        if fname:
-            self.filename = fname
+    def persist(self, file_ext=False, filename=False):
+        if filename:
+            self.filename = filename
 
         if not self.filename:
-            self.filename = input('Defina o nome para o arquivo de saída: ')
+            self.filename = read_input(input_label="Defina o nome para o arquivo de saída")
 
         if file_ext:
             self.filename = self.filename.strip() + file_ext
             
         if not self.target_folder:
-            input_value = input('Defina a pasta de destino [{}]: '.format(amarelo("aperte ENTER para pasta corrente")))
+            input_value = read_input(input_label='Defina a pasta de destino [{}]: '.format(amarelo("aperte ENTER para pasta corrente")))
             if not input_value:
-                self.target_folder = '.'
+                self.target_folder = os.curdir
 
         pk.write_pickle(self, self.target_folder, self.filename)
 
@@ -169,119 +156,129 @@ class Form(PickleDataType):
 
 
 
-class Extended_UniqueItem_List(list):
-    def __init__(self, iterator=()):
-        super(Extended_UniqueItem_List, self).__init__(iterator)
-        self.sorted = False
-
-    def __sub__(self, other):
-        for element in other:
-            self.remove(element)
-        return self
-
-    def __str__(self):
-        output = ""
-        for element in self:
-            output += ' -' + element + '\n'
-        return output
-
-    def append(self, element):
-        if self.index(element):
-            return
-
-        try:
-            if element > self[-1]:
-                self.sorted = True
-            else:
-                self.sorted = False
-        except IndexError:
-            self.sorted = True
-        
-        super(Extended_UniqueItem_List, self).append(element)
-
-        if not self.sorted:
-            self.sort()
-
-    def index(self, element, self_list_nfo=False): # Bisection search
-        if not self_list_nfo:
-            self_list_nfo = self
-
-        if len(self_list_nfo) == 0:
-            return False
-        
-        elif len(self_list_nfo) == 1:
-            if element == self_list_nfo[0]:
-                return True
-            else:
-                return False
-
-        slice_init = 0
-        slice_end = len(self_list_nfo)
-        section_mid_point_ref = slice_end - slice_init
-        mid = (section_mid_point_ref // 2)
-        position_fixer = slice_init
-        
-
-        while section_mid_point_ref != 0:
-            section = self_list_nfo[slice_init:slice_end]
-
-            if len(section) == 1:
-                if section[0] == element:
-                    return position_fixer + mid
-                else:
-                    return False
-
-            if section[mid] == element:
-                return position_fixer + mid
-            
-            elif element > section[mid]:
-                slice_init = slice_init + mid
-                fixer_pass = False
-                
-            elif element < section[mid]:
-                slice_end = mid + position_fixer
-                fixer_pass = True
-            
-            if not fixer_pass:
-                position_fixer += mid
-                
-            section_mid_point_ref = slice_end - slice_init
-            mid = (section_mid_point_ref // 2)
-        
-        return False
-            
-
-
-class ExtendedDict(OrderedDict):
-    def __add__(self, other):
-        if len(self) > len(other):
-            iterated_dict = other.items()
-            copied_dict = self.copy()
-        else:
-            iterated_dict = self.items()
-            copied_dict = other.copy()
-
-        for item in iterated_dict:
-            if copied_dict.get(item[0]):
-                if type(copied_dict[item[0]]) == list:
-                    copied_dict[item[0]].append(item[1])
-                else:
-                    copied_dict[item[0]] = [copied_dict[item[0]], item[1]]
-            else:
-                copied_dict[item[0]] = item[1]
-        return copied_dict
-    
-    def append(self, key, value):
-        if not self.get(key):
-            self[key] = [value]
-        else:
-            self[key].append(value)
-
-
-class FileIndexDict(ExtendedDict, PickleDataType):
+class FileIndexDict(ColisionDict, PickleDataType):
     def __init__(self):
         super(FileIndexDict, self).__init__()
         self.target_folder = False
         self.filename = False
+
+
+class UnicListFile(PK_LinkedList, PickleDataType):
+    def __init__(self, target_folder=False, filename=False):
+        super(UnicListFile, self).__init__()
+        self.target_folder = target_folder
+        self.filename = filename
+
+    def append(self, element):
+        super(UnicListFile, self).append(element)
+        self.persist()
+
+
+class HistoryTable(PickleDataType):
+    """Tabela histórico. Tabela para armazenamento de informações com objetivo de minimizar redundância e permitir filtragem rápida de valores.
+    
+    Atributos:
+        target_folder {string} -- pasta onde o arquivo será salvo
+        filename {string} -- nome do arquivo a ser salvo
+        fieldnames {list} -- lista com o nome das colunas da tabela
+        fieldnames_idx {dict} -- dicionário com index de referencia para cada coluna nominal de 'self.fieldnames'
+        fieldnames_mapping {ColisionDict} -- dicionário com indicação das linhas onde estão situados um dado valor
+        fieldnames_to_map {list} -- lista com o nome das colunas que terão seus valores mapeados
+        matrix {list_of_lists} -- matriz numérica onde os dados da tabela serão efetivamente armazenados como números
+        col_wid {list} -- lista de inteiros com a largura das colunas a ser usada quando tabela for impressa
+        referense_table {list_of_dicts} -- lista dicionários contendo a referencia entre o valor de um campo específico (geralmente string) e o inteiro a ser registrado na respectiva coluna da matrix
+        reversed_reference_table {list_of_dicts} -- lista de dicionários para tradução da matrix, usada para restabelecer os valores originais quando a tabela for impressa
+        
+
+    Methods:
+        append -- adiciona informações na tabela, o argumento deve ser do tipo 'dict'
+        filter -- imprime as linhas corespondentes ao valor filtrado
+    
+    """
+    def __init__(self, target_folder=False, filename=False, fieldnames=False, map_fields=False):
+        super(HistoryTable, self).__init__()
+        self.target_folder = target_folder
+        self.filename = filename
+        self.__set_fieldnames__(fieldnames)
+        self.fieldnames_mapping = ColisionDict()
+        self.fieldnames_to_map = []
+        self.__set_mapping__(map_fields)
+        self.fieldnames_idx = create_col_index(self.fieldnames)
+        self.matrix = []
+        self.col_wid = create_reference_table(num_of_cols=len(self.fieldnames), zeros=True)
+        self.reference_table = create_reference_table(num_of_cols=len(self.fieldnames))
+        self.reversed_reference_table = create_reference_table(num_of_cols=len(self.fieldnames))
+
+
+    def __str__(self):
+        return print_numeric_matrix(self.matrix, translator=self.reversed_reference_table, col_wid=self.col_wid, return_value=True)
+
+
+    def __set_fieldnames__(self, fieldnames):
+        base_fieldnames = ['data_registro']
+
+        if fieldnames:
+            assert isinstance(fieldnames, (list, tuple)), "Argumento 'fieldnames', deve ser do tipo 'list' ou 'tuple'"
+            custom_fieldnames = fieldnames
+        else:
+            custom_fieldnames = read_input(input_label="Indique o nome dos campos separando-os por ';'", dada_type='list', list_item_delimiter=';')
+        
+        self.fieldnames = base_fieldnames + custom_fieldnames
+
+
+    def __set_mapping__(self, map_fields):
+        if map_fields:
+            if isinstance(map_fields, bool):
+                self.fieldnames_to_map = pick_options(self.fieldnames, input_label="Selecione as colunas a serem mapeadas", max_selection=len(self.fieldnames))
+            else:
+                assert isinstance(map_fields, (list, tuple)), "Argumento 'map_fields', deve ser do tipo 'list' ou 'tuple'"
+                self.fieldnames_to_map = map_fields 
+
+
+    def filter(self, value, return_value=False):
+        output = []
+        
+        for line in self.fieldnames_mapping[value]:
+            output.append(self.matrix[line])
+        
+        if return_value:
+            return print_numeric_matrix(output, translator=self.reversed_reference_table, col_wid=self.col_wid, return_value=return_value, output_format='list')
+        else:
+            return print_numeric_matrix(output, translator=self.reversed_reference_table, col_wid=self.col_wid, return_value=return_value, output_format='string')
+
+    def append(self, dictionary):
+        """Adiciona linha à tabela
+        
+        Arguments:
+            dictionary {dict} -- dicionário contendo as mesmas chaves definidas em 'fieldnames'
+        """
+
+        assert isinstance(dictionary, dict)
+
+        dictionary['data_registro'] = today_date()
+
+        matrix_lines = len(self.matrix)
+        new_line = list(range(0, len(self.fieldnames)))
+        for key in dictionary.keys():
+
+            try:
+                new_line[self.fieldnames_idx[key][0]] = dictionary[key]
+                if len(dictionary[key]) > self.col_wid[self.fieldnames_idx[key][0]]:
+                    self.col_wid[self.fieldnames_idx[key][0]] = len(dictionary[key]) + 2
+                
+                if key in self.fieldnames_to_map:
+                    self.fieldnames_mapping.append(dictionary[key], matrix_lines)
+
+            except KeyError:
+                print("Coluna não encontrada...")
+                return
+
+        lines = string_table_to_int_matrix([new_line], reference_data=self.reference_table, reversed_reference_data=self.reversed_reference_table)
+        self.matrix = self.matrix + lines[0]
+        self.persist()
+    
+
+class HistoryTasks(HistoryTable):
+    pass
 
 
