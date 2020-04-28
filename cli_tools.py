@@ -15,39 +15,46 @@ import heapq
 import re
 import time
 
-from colored import fg, attr#, bg
+from colored import fg, attr
 from subprocess import getoutput
 from random import randrange, randint
 from string import whitespace, punctuation, digits, ascii_letters
-from collections import OrderedDict#, Counter
+from collections import OrderedDict
 from copy import copy
 
-
-from decorators import clear_screen
 
 tmp_folder = tempfile.gettempdir()
 
 class PK_LinkedList(list):
-    def __init__(self, iterator=()):
-        super(PK_LinkedList, self).__init__(iterator)
-        self.sorted = False
+	"""Lista de chaves primárias... Implementa verificação de existencia de elemento antes de 'append' e operador de subtração.
 
-    def __sub__(self, other):
-        for element in other:
-            self.remove(element)
-        return self
+	Arguments:
+		list {tuple|list} -- iterador que servirá de base à lista
+	"""
 
-    def append(self, element):
-        if self.index(element) != None:
-            print("Item já está na lista...")
-            return
+	def __init__(self, iterator=()):
+		super(PK_LinkedList, self).__init__(iterator)
 
-        super(PK_LinkedList, self).append(element)
+	def __sub__(self, other):
+		for element in other:
+			try:
+				self.remove(element)
+			except ValueError:
+				print("Elemento '{}' não existe na lista original".format(element))
+		return self
 
-    def index(self, element, self_list_nfo=False):
-        check_element = bisect_search_idx(element, self, (0, len(self)))
-        if not isinstance(check_element, bool): return check_element
-        else: return None
+	def append(self, element):
+		if self.index(element) != None:
+			print("Item já está na lista...")
+			return
+
+		super(PK_LinkedList, self).append(element)
+
+	def index(self, element, self_list_nfo=False):
+		check_element = bisect_search_idx(element, self, (0, len(self)))
+		if not isinstance(check_element, bool): return check_element
+		else: return None
+
 
 
 class PK_OrderedLinkedList(list):
@@ -284,6 +291,37 @@ def cinza(string):
 
 def salmao(string):
 	return "{}{}{}".format(fg(9), string, attr(0))
+
+
+
+def clear():
+	if sys.platform == 'win32':
+		os.system('cls')
+	else:
+		os.system('clear')
+
+
+
+def clear_screen(func):
+	#Decorator
+	def wrapper(*args, **kargs):
+		clear()
+		return func(*args, **kargs)
+	return wrapper
+
+
+
+
+def only_tuple_and_list(func):
+	#Decorator
+	def wrapper(*args, **kargs):
+		if not isinstance(args, (tuple, list)):
+			err = "Iterador não suportado, utilizar 'tuple' ou 'list' como argumento."
+			raise ValueError(err)
+		return func(*args, **kargs)
+	return wrapper
+
+
 
 
 
@@ -2428,52 +2466,58 @@ def read_input(input_label=False, default=False, dada_type='string', data_patter
 	Returns:
 		{string|int|float...} -- retorna o dado inserido no formato desejado...
 	"""
-	
+	def collect_response():
+		while True:
+			response = input(prompt_color(prompt))
+			all_ok = False
+
+			if not data_pattern:
+				if dada_type == 'string':
+					break
+				
+				elif dada_type == 'int':
+					try:
+						response = int(response)
+						all_ok = True
+					except ValueError: print(warning_color(waring_msg))
+				
+				elif dada_type == 'float':
+					try: 
+						response = float(response)
+						all_ok = True
+					except ValueError: print(warning_color(waring_msg))
+
+				elif dada_type == 'list':
+					try: 
+						response = split_and_strip(response, list_item_delimiter)
+						all_ok = True
+					except ValueError: print(warning_color(waring_msg))
+
+				elif dada_type == 'date':
+					pass
+
+				if all_ok:
+					break
+			else:
+				try:
+					re.search(data_pattern, response).string
+					break
+
+				except AttributeError:
+					print(warning_color(waring_msg))
+		
+		return response
+
+
+
 	if clear_screen:
 		clear()
 		
 	if input_label:
 		if default: print(input_label + ' [{}]'.format(str(default)))
 		else: print(input_label)
-
-	while True:
-		response = input(prompt_color(prompt))
-		all_ok = False
-
-		if not data_pattern:
-			if dada_type == 'string':
-				break
-			
-			elif dada_type == 'int':
-				try:
-					response = int(response)
-					all_ok = True
-				except ValueError: print(warning_color(waring_msg))
-			
-			elif dada_type == 'float':
-				try: 
-					response = float(response)
-					all_ok = True
-				except ValueError: print(warning_color(waring_msg))
-
-			elif dada_type == 'list':
-				try: 
-					response = split_and_strip(response, list_item_delimiter)
-					all_ok = True
-				except ValueError: print(warning_color(waring_msg))
-
-			elif dada_type == 'date':
-				pass
-
-			if all_ok:
-				break
-		else:
-			try:
-				re.search(data_pattern, response).string
-				break
-
-			except AttributeError:
-				print(warning_color(waring_msg))
+	
+	response = collect_response()
 
 	if break_line: print('')
 

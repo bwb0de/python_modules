@@ -11,11 +11,15 @@ import time
 
 from collections import OrderedDict
 
-from cli_tools import strip_simbols, strip_spaces, verde, amarelo, select_op, limpar_tela, branco, amarelo, vermelho, read_input
-from cli_tools import bisect_search_idx, create_col_index, string_table_to_int_matrix, create_reference_table, print_numeric_matrix, pick_options, today_date
-from cli_tools import ColisionDict, PK_LinkedList
 
 import py_pickle_handlers as pk
+
+from cli_tools import clear, verde, amarelo, branco, vermelho, read_input, pick_options, input_yes_or_no
+from cli_tools import bisect_search_idx, create_col_index, string_table_to_int_matrix, create_reference_table, print_numeric_matrix, pick_options
+from cli_tools import ColisionDict, PK_LinkedList
+from time_handler import today_date
+
+
 
 
 
@@ -51,30 +55,38 @@ class Form(PickleDataType):
         def definir_questoes():
             output = OrderedDict()
             q_num = itertools.count()
-            
+            in_block = False
+            current_block_name = ""
             while True:
-                limpar_tela()
+                clear()
                 n = next(q_num)
                 output[n] = OrderedDict()
                 output[n]['regex'] = False
-                output[n]['enunciado'] = self.read_input(input_label="Qual o enunciado da questão?")
-                output[n]['tipo_dado'] = select_op(['string', 'int', 'float', 'list'], 1, input_label="Selecione o tipo de dado")[0]
-                output[n]['tipo_questão'] = select_op(['text', 'radio', 'checkbox'], 1, input_label="Selecione o tipo de questão")[0]
-                
-                if output[n]['tipo_dado'] == 'string':
-                    op = self.read_input(input_label='Necessário validar a informação?', data_pattern='[sn]', waring_msg='Responda ["s" ou "n"]...')
+                if not in_block:
+                    op = input_yes_or_no(input_label="Iniciar bloco de questões?")
                     if op == 's':
-                        output[n]['regex'] = self.read_input(input_label="Qual a expressão regular de validação da informação?")
-                
-                output[n]['warning_msg'] = self.read_input(input_label="Qual a mensagem de alerta em caso de erro?")
+                        current_block_name = read_input(input_label="Qual o nome do bloco?")
+                        in_block = True
+                if in_block: output[n]['grp_block'] = current_block_name
+                output[n]['enunciado'] = read_input(input_label="Qual o enunciado da questão?")
+                output[n]['tipo_dado'] = pick_options(['string', 'int', 'float', 'list'], input_label="Selecione o tipo de dado")
+                output[n]['tipo_questão'] = pick_options(['text', 'radio', 'checkbox'], input_label="Selecione o tipo de questão")
+                if output[n]['tipo_dado'] == 'string':
+                    op = input_yes_or_no(input_label='Necessário validar a informação?')
+                    if op == 's': output[n]['regex'] = read_input(input_label="Informe a expressão regular de validação:")
+                output[n]['warning_msg'] = read_input(input_label="Qual a mensagem de alerta em caso de erro?")
                 output[n]['warning_color'] = amarelo
-
-                op = self.read_input(input_label='Inserir outra questão?', data_pattern='[sn]', waring_msg='Responda ["s" ou "n"]...')
-                if op == 'n': break
-            
+                if in_block:
+                    op = input_yes_or_no(input_label="Inserir outra questão no bloco?")
+                    if op == 'n': 
+                        in_block = False
+                        op = input_yes_or_no(input_label="Inserir outra questão no formulário?")
+                        if op == 'n': break
+                else:
+                    op = input_yes_or_no(input_label="Inserir outra questão no formulário?")
+                    if op == 'n': break
             return output
-
-
+ 
         super(Form, self).__init__()
         self.target_folder = folder
         self.titulo = titulo
@@ -87,7 +99,7 @@ class Form(PickleDataType):
     def executar_formulario(self):
         respostas = OrderedDict()
         for n in self.q.keys():
-            respostas[self.q[n]['enunciado']] = self.read_input(\
+            respostas[self.q[n]['enunciado']] = read_input(\
                 input_label=self.q[n]['enunciado'],\
                 dada_type=self.q[n]['tipo_dado'],\
                 data_pattern=self.q[n]['regex'],\
@@ -96,63 +108,7 @@ class Form(PickleDataType):
         return respostas
 
 
-    def split_and_strip(self, string, list_item_delimitor=','):
-        output = string.split(list_item_delimitor)
-        idx = itertools.count()
-        for i in output: output[next(idx)] = i.strip()
-        return output
 
-
-    def read_input(self, input_label=False, dada_type='string', data_pattern=False, prompt="$: ", list_item_delimitor=',', waring_msg="Resposta inválida ou em formato inadequado...", clear_screen=False, label_color=branco, prompt_color=branco, warning_color=vermelho, callback=False):
-        if clear_screen:
-            limpar_tela()
-         
-        if input_label:
-            print(input_label)
-
-        while True:
-
-            response = input(prompt_color(prompt))
-            all_ok = False
-
-            if not data_pattern:
-                if dada_type == 'string':
-                    print(response)
-                    break
-                
-                elif dada_type == 'int':
-                    try:
-                        response = int(response)
-                        all_ok = True
-                    
-                    except ValueError: print(warning_color(waring_msg))
-                
-                elif dada_type == 'float':
-                    try: 
-                        response = float(response)
-                        all_ok = True
-                    
-                    except ValueError: print(warning_color(waring_msg))
-
-                elif dada_type == 'list':
-                    try: 
-                        response = self.split_and_strip(response, list_item_delimitor)
-                        all_ok = True
-                    
-                    except ValueError: print(warning_color(waring_msg))
-            
-                if all_ok:
-                    break
-                
-            else:
-                try:
-                    re.search(data_pattern, response).string
-                    break
-
-                except AttributeError:
-                    print(warning_color(waring_msg))
-        
-        return response
 
 
 
