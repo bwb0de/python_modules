@@ -20,12 +20,20 @@ def convert_date_string(s, string_format='pt-br'):
 	Returns:
 		{datetime.datetime} -- objeto 'datetime.datetime' para operações matemáticas com data
 	"""
-	if string_format == 'pt-br':
-		return datetime.datetime.fromtimestamp(time.mktime(time.strptime(s, "%d/%m/%Y")))
-	elif string_format == 'us':
-		return datetime.datetime.fromtimestamp(time.mktime(time.strptime(s, "%m/%d/%Y")))
-	elif string_format == 'ISO':
-		return datetime.datetime.fromtimestamp(time.mktime(time.strptime(s, "%Y-%m-%d")))
+	
+	assert isinstance(s, str), "O argumento A deve uma string de data correspondente ao argumento B..."
+	
+	try:
+		if string_format == 'pt-br':
+			return datetime.datetime.fromtimestamp(time.mktime(time.strptime(s, "%d/%m/%Y")))
+		elif string_format == 'us':
+			return datetime.datetime.fromtimestamp(time.mktime(time.strptime(s, "%m/%d/%Y")))
+		elif string_format == 'ISO':
+			return datetime.datetime.fromtimestamp(time.mktime(time.strptime(s, "%Y-%m-%d")))
+		else:
+			return "Formaro de string não reconhecido..."
+	except ValueError:
+		return "Data inválida ou em formato inválido..."
 
 
 def create_period_pair(start_date, end_date, string_format='pt-br'):
