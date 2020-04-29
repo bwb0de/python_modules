@@ -112,10 +112,10 @@ def test_create_line_index():
 
 
 def test_string_table_to_int_matrix():
-    matrix, references = string_table_to_int_matrix(table3, delimiter=':')
-    assert len(matrix[0]) == len(references)
-    assert len(references[0]) == 2
-    assert len(references[2]) == 3
+    numeric_matrix, reference_list, reversed_reference_list = string_table_to_int_matrix(table3, delimiter=':')
+    assert len(numeric_matrix[0]) == len(reference_list)
+    assert len(reference_list[0]) == 2
+    assert len(reference_list[2]) == 3
     with raises(AssertionError):
         string_table_to_int_matrix(1)
         string_table_to_int_matrix(dictionary)
