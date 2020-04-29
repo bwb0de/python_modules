@@ -1395,7 +1395,7 @@ def load_csv_cols(filename, selected_cols=[], file_folder=os.curdir, delimiter='
 	for line in lines:
 		output_line = []
 		for col in selected_cols:
-			if implict_convert: output_line.append(try_implict_convert(line[col]))
+			if implict_convert: output_line.append(try_implicit_convert(line[col]))
 			else: output_line.append(line[col])
 		output.append(output_line)
 
@@ -1413,7 +1413,7 @@ def load_csv_cols(filename, selected_cols=[], file_folder=os.curdir, delimiter='
 
 
 
-def try_implict_convert(value):
+def try_implicit_convert(value, regex="", conversion_function=None):
 	"""Tenta converter as informações das colunas de um arquivo CSV conforme a máscara/pattern identificado
 	
 	Arguments:
@@ -1422,18 +1422,22 @@ def try_implict_convert(value):
 	Returns:
 		{int|float|string} -- tenta retornar 'int' ou 'float', se não for possível devolve o valor de entrada.
 	"""
-
-	if (value.find(',') != -1) or (value.find('.') != -1):
-		if re.search(r'\d*,\d*', value):
+	if regex:
+		if re.search(regex, value.strip()):
+			return conversion_function(value)
+			
+	
+	elif (value.find(',') != -1) or (value.find('.') != -1):
+		if re.search(r'^\d*,\d*$', value.strip()):
 			try:
-				value = value.replace(',','.')
+				value = value.replace(',','.').strip()
 				value = float(value)
 			except: pass
 			return value
 
-		elif re.search(r'\d*.\d*', value):
+		elif re.search(r'^\d*.\d*$', value.strip()):
 			try:
-				value = float(value)
+				value = float(value.strip())
 			except: pass
 			return value
 
@@ -1441,7 +1445,7 @@ def try_implict_convert(value):
 			return value
 
 
-	elif re.search(r'\d*', value):
+	elif re.search(r'\d*', value.strip()):
 		try: value = int(value)
 		except: pass
 		return value
@@ -1822,7 +1826,7 @@ def check_table_atributes(table, select=False, delimiter=False):
 		line_type = 'dict'
 
 	elif isinstance(table[0], str):
-		assert delimiter != False
+		assert delimiter != False, "Em tabelas com linhas tipo texto, é necessário fornecer um delimitador..."
 		fields = split_and_strip(table, delimiter)
 		print_list(fields)
 		op = input_yes_or_no(input_label="Estes valores são os nomes corretos das colunas?")
