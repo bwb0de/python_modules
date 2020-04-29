@@ -295,10 +295,8 @@ def salmao(string):
 
 
 def clear():
-	if sys.platform == 'win32':
-		os.system('cls')
-	else:
-		os.system('clear')
+	if sys.platform == 'win32': os.system('cls')
+	else: os.system('clear')
 
 
 
@@ -2541,11 +2539,6 @@ def input_yes_or_no(input_label=False, clear_screen=False, label_color=branco, p
 
 
 
-def clear():
-	if sys.platform == 'win32': os.system('cls')
-	else: os.system('clear')
-
-
 
 def pick_options(selection_list, input_label=False, number_of_cols=1, max_selection=1, sort_selection_list=False, clear_screen=False, label_color=branco, item_color=amarelo, warning_msg='Digite número(s) correspondente(s) às opções...', prompt='$: ', prompt_color=branco, warning_color=vermelho, return_index=False, ensure_list_output=False):
 	"""[summary]
@@ -2733,13 +2726,16 @@ def render_form_get_values(form_file, file_folder=os.curdir, skip_q=[]):
 
 	Form file struct:
 	{
+		"command_tag": "atdmnt"
+		"external_registry_file": "atendimentos_setor.json"
 		"form_head": "Registro de atendimento",
-		"info": "Intrumental para registro de atendimentos no âmbito do SPS/FUP",
+		"form_info": "Intrumental para registro de atendimentos no âmbito do SPS/FUP",
 		"form_questions":
 		[
 			{
 				"enunciado": "Matrícula",
 				"id": "identificador",
+				"tipo": "text",
 				"tipo": "text",
 			},
 			{
@@ -2805,7 +2801,7 @@ def render_form_get_values(form_file, file_folder=os.curdir, skip_q=[]):
 		grupos_de_opcao = []
 		grupos_de_alternativas = []
 
-		if q['tipo'] == 'radio':
+		if q['tipo_questao'] == 'radio':
 			if isinstance(q['alternativas'], list):
 				nfo[q['id']] = pick_options(q['alternativas'], input_label=q['enunciado'], ensure_list_output=True)
 				if "Outro" in nfo[q['id']]:
@@ -2814,7 +2810,7 @@ def render_form_get_values(form_file, file_folder=os.curdir, skip_q=[]):
 						nfo[q['id']].append(element)
 					nfo[q['id']].remove("Outro")
 
-		elif q['tipo'] == 'checkbox':
+		elif q['tipo_questao'] == 'checkbox':
 			if isinstance(q['alternativas'], list):
 				nfo[q['id']] = pick_options(q['alternativas'], input_label=q['enunciado'], ensure_list_output=True, max_selection=len(q['alternativas']))
 				if "Outro" in nfo[q['id']]:
@@ -2921,11 +2917,11 @@ def render_form_get_values(form_file, file_folder=os.curdir, skip_q=[]):
 			if q['id'] in skip_q:
 				pass
 
-			elif q['tipo'] == 'text':
+			elif q['tipo_questao'] == 'text':
 				nfo[q['id']] = read_input(input_label=q['enunciado'])
 				print("")
 
-			elif q['tipo'] == 'radio' or q['tipo'] == 'checkbox':
+			elif q['tipo_questao'] == 'radio' or q['tipo_questao'] == 'checkbox':
 				try:
 					q_response = objective_question_handler(q)
 					nfo[q['id']] = q_response[0]
@@ -2941,8 +2937,8 @@ def render_form_get_values(form_file, file_folder=os.curdir, skip_q=[]):
 	#
 	# Antes de apresentar e coletar informações sobre as questões, 'create_trigger_file' lê o formulário e
 	# registra os gatilhos definidos nos campos 'trigger_skip', caso existam. Este gatilhos são registrados
-	# no arquivo '.form_triggers-*' dentro da pasta do usuário. '*' será substituído pelo nome do arquivo
-	# original do formulário.
+	# no arquivo '.form_triggers-*' dentro da pasta do usuário. '*' será substituído pelo valor definido 
+	# na chave 'external_registry_file' no escopo gobal do formulário.
 	#
 	# O arquivo de gatilhos, '.form_triggers-*', guardará as regras/condições para apresentação condicional
 	# das questões do formulário. Dessa forma, quando for o momento de iterar sobre uma questão específica,
