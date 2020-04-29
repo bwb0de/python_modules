@@ -15,7 +15,7 @@ from collections import OrderedDict
 import py_pickle_handlers as pk
 
 from cli_tools import clear, verde, amarelo, branco, vermelho, read_input, pick_options, input_yes_or_no
-from cli_tools import bisect_search_idx, create_col_index, string_table_to_int_matrix, create_reference_table, print_numeric_matrix, pick_options
+from cli_tools import bisect_search_idx, create_col_index, string_table_to_int_matrix, create_reference_table, print_numeric_matrix, save_json
 from cli_tools import ColisionDict, PK_LinkedList
 from time_handler import today_date
 
@@ -23,7 +23,7 @@ from time_handler import today_date
 
 
 
-class PickleDataType():
+class PickleType():
     def __init__(self, target_folder=False, filename=False):
         self.target_folder = target_folder
         self.filename = filename
@@ -50,8 +50,8 @@ class PickleDataType():
 
 
 
-class Form(PickleDataType):
-    def __init__(self, titulo, folder):
+class Form():
+    def __init__(self):
         def definir_questoes():
             output = OrderedDict()
             q_num = itertools.count()
@@ -69,13 +69,14 @@ class Form(PickleDataType):
                         in_block = True
                 if in_block: output[n]['grp_block'] = current_block_name
                 output[n]['enunciado'] = read_input(input_label="Qual o enunciado da questão?")
+                output[n]['id'] = read_input(input_label="Identificador do campo?")
                 output[n]['tipo_dado'] = pick_options(['string', 'int', 'float', 'list'], input_label="Selecione o tipo de dado")
-                output[n]['tipo_questão'] = pick_options(['text', 'radio', 'checkbox'], input_label="Selecione o tipo de questão")
+                output[n]['tipo_questao'] = pick_options(['text', 'radio', 'checkbox'], input_label="Selecione o tipo de questão")
                 if output[n]['tipo_dado'] == 'string':
                     op = input_yes_or_no(input_label='Necessário validar a informação?')
                     if op == 's': output[n]['regex'] = read_input(input_label="Informe a expressão regular de validação:")
                 output[n]['warning_msg'] = read_input(input_label="Qual a mensagem de alerta em caso de erro?")
-                output[n]['warning_color'] = amarelo
+                #output[n]['warning_color'] = amarelo
                 if in_block:
                     op = input_yes_or_no(input_label="Inserir outra questão no bloco?")
                     if op == 'n': 
@@ -88,38 +89,36 @@ class Form(PickleDataType):
             return output
  
         super(Form, self).__init__()
-        self.target_folder = folder
-        self.titulo = titulo
+        self.form_head = read_input(input_label="Qual o título do formulário?")
+        self.form_info = read_input(input_label="Qual a finalidade do formulário?")
         self.q = definir_questoes()
         self.persist()
 
     def __repr__(self):
-        return self.filename
+        return self.form_head
 
-    def executar_formulario(self):
-        respostas = OrderedDict()
-        for n in self.q.keys():
-            respostas[self.q[n]['enunciado']] = read_input(\
-                input_label=self.q[n]['enunciado'],\
-                dada_type=self.q[n]['tipo_dado'],\
-                data_pattern=self.q[n]['regex'],\
-                waring_msg=self.q[n]['warning_msg'],\
-                warning_color=self.q[n]['warning_color'])
-        return respostas
-
-
+    def persist(self):
+        output = OrderedDict()
+        output["command_tag"] = ''
+        output["external_registry_file"] = ''
+        output["form_head"] = self.form_head
+        output["form_info"] = self.form_info
+        output["form_questions"] = []
+        for item in self.q.values(): output["form_questions"].append(item)
+        save_json(output, self.form_head.lower().replace(" ", "_")+".json")
+        
 
 
 
 
-class FileIndexDict(ColisionDict, PickleDataType):
+class FileIndexDict(ColisionDict, PickleType):
     def __init__(self):
         super(FileIndexDict, self).__init__()
         self.target_folder = False
         self.filename = False
 
 
-class UnicListFile(PK_LinkedList, PickleDataType):
+class UnicListFile(PK_LinkedList, PickleType):
     def __init__(self, target_folder=False, filename=False):
         super(UnicListFile, self).__init__()
         self.target_folder = target_folder
@@ -130,7 +129,7 @@ class UnicListFile(PK_LinkedList, PickleDataType):
         self.persist()
 
 
-class HistoryTable(PickleDataType):
+class HistoryTable(PickleType):
     """Tabela histórico. Tabela para armazenamento de informações com objetivo de minimizar redundância e permitir filtragem rápida de valores.
     
     Atributos:
