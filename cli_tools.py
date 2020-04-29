@@ -2733,15 +2733,26 @@ def render_form_get_values(form_file, file_folder=os.curdir, skip_q=[]):
 		"form_questions":
 		[
 			{
+				"regex": false,
 				"enunciado": "Matrícula",
 				"id": "identificador",
-				"tipo": "text",
-				"tipo": "text",
+				"tipo_dado": "string",
+				"tipo_questao": "text",
+				"warning_msg": false
+
+			},
+			{
+				"regex": "^\\(\\d\\d\\) \\d\\d\\d\\-\\d\\d\\d\\-\\d\\d\\d$",
+				"enunciado": "Telefone",
+				"id": "tel",
+				"tipo_dado": "string",
+				"tipo_questao": "text",
+				"warning_msg": "O número de telefone deve obedecer o formato (##) ###-###-###"
 			},
 			{
 				"enunciado": "Tipo de atendimento",
 				"id": "atd_t",
-				"tipo": "radio",
+				"tipo_questao": "radio",
 				"alternativas" :
 				[
 					"Informação presencial",
@@ -2751,7 +2762,7 @@ def render_form_get_values(form_file, file_folder=os.curdir, skip_q=[]):
 			{
 				"enunciado": "Procedimento",
 				"id": "procedimento",
-				"tipo": "checkbox",
+				"tipo_questao": "checkbox",
 				"alternativas": 
 				{
 					"Registros de presença do estudante": [
@@ -2896,11 +2907,9 @@ def render_form_get_values(form_file, file_folder=os.curdir, skip_q=[]):
 	
 	def prompt_questions(nfo, q):
 		skip_this = False
-		#print(q['id'])
 		if form_triggers_info.get(q['id']):
 			if form_triggers_info[q['id']].get('trigger_skip'):
 				for t in form_triggers_info[q['id']]['trigger_skip'].keys():
-					#print("» "+t)
 					try:
 						if nfo[t] in form_triggers_info[q['id']]['trigger_skip'].get(t):
 							skip_this = True
@@ -2918,7 +2927,7 @@ def render_form_get_values(form_file, file_folder=os.curdir, skip_q=[]):
 				pass
 
 			elif q['tipo_questao'] == 'text':
-				nfo[q['id']] = read_input(input_label=q['enunciado'])
+				nfo[q['id']] = read_input(input_label=q['enunciado'], waring_msg=q['warning_msg'], data_pattern=q['regex'])
 				print("")
 
 			elif q['tipo_questao'] == 'radio' or q['tipo_questao'] == 'checkbox':
