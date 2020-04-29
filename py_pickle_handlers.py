@@ -9,7 +9,7 @@ import io
 import os
 import pickle
 
-from cli_tools import list_col_responses, dict_from_table, select_ops, branco, amarelo, vermelho
+from cli_tools import list_col_responses, dict_from_table, pick_options, branco, amarelo, vermelho
 
 
 def read_pickle(obj_file, folder='.'):
@@ -69,7 +69,7 @@ def load_selected_pickle_ob(label, folder, label_color=branco, item_color=amarel
 	itens = return_object_info_and_location_list(folder)
 	lista_nominal_itens = list(list_col_responses(itens, col_num=0, delimitor=';'))
 	localizacao_itens = dict_from_table(itens, delimitor=';')
-	itens_selecionados = select_ops(lista_nominal_itens, 1, input_label=label, item_color=item_color, warning_color=warning_color)
+	itens_selecionados = pick_options(lista_nominal_itens, input_label=label, item_color=item_color, warning_color=warning_color)
 	for item in itens_selecionados:
 		caminho_para_item = localizacao_itens[item][0]
 		arquivo_item = caminho_para_item.split('/')[-1]
