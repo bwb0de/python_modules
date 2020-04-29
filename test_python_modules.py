@@ -6,6 +6,7 @@ import os
 from cli_tools import *
 from py_obj_data_tools import *
 from py_pickle_handlers import *
+from time_handler import *
 
 from pytest import fixture, raises
 
@@ -316,3 +317,34 @@ def test_history_table():
     del(atd)
     atd2 = read_pickle('atd', folder='/tmp')
     assert atd2.filter('1233-098098', return_value=True) == [[data_hoje, 'Entrevista', '1233-098098'], [data_hoje, 'Estudo socioeconômico', '1233-098098']]
+
+
+def test_time_handler():
+    assert convert_date_string("12/01/1982") == datetime.datetime(1982, 1, 12, 0, 0)
+    assert convert_date_string("01/12/1982", string_format='us') == datetime.datetime(1982, 1, 12, 0, 0)
+    assert convert_date_string("12/13/1982") == "Data inválida ou em formato inválido..."
+    with raises(AssertionError):
+        convert_date_string(12/13/1982)
+        convert_date_string(datetime.datetime(1982, 1, 12, 0, 0))
+
+
+def test_random_floats():
+    numbers = make_random_float_list(20, min_val=0, max_val=10000)
+    for n in numbers:
+        assert isinstance(n, float)
+
+
+def test_implicit_convert():
+    assert isinstance(try_implict_convert("12"), int)
+    assert isinstance(try_implict_convert("12,0"), float)
+    assert isinstance(try_implict_convert("12.0"), float)
+    assert isinstance(try_implict_convert("12/01/1982", regex=r'^\d\d\/\d\d\/\d\d\d\d$', conversion_function=convert_date_string), datetime.datetime)
+
+
+def test_list_handlers():
+    lnum1 = [1,4,7,6,3,5,5,3,1]
+    lnum2 = [1,2,3]
+    assert get_indexes(1, lnum1) == (0,8)
+    assert return_longest_then_shortest_list(lnum2, lnum1) == (lnum1, lnum2)
+    assert diff_lists(lnum1, lnum2) == [4,7,6,5,5]
+    
